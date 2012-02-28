@@ -108,6 +108,7 @@
     <Compile Include="ResourceLib\VarFileInfo.cs" />
     <Compile Include="ResourceLib\VarTable.cs" />
     <Compile Include="ResourceLib\VersionResource.cs" />
+    <Compile Include="Tools\SDK.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(SolutionDir)resources\CoApp.ico" />
@@ -121,8 +122,9 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup><AssemblySearchPaths>$(SolutionDir)..\coapp\output\any\$(Configuration)\bin;$(SolutionDir)\ext\libraries\;c:\programdata\Reference Assemblies\any;$(AssemblySearchPaths)</AssemblySearchPaths></PropertyGroup>  
-
+  <PropertyGroup>
+    <AssemblySearchPaths>$(SolutionDir)..\coapp\output\any\$(Configuration)\bin;$(SolutionDir)\ext\libraries\;c:\programdata\Reference Assemblies\any;$(AssemblySearchPaths)</AssemblySearchPaths>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

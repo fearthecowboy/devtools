@@ -15,3 +15,7 @@ Options:
 	--certificate-path=<c.pfx>  path to load signing certificate (w/pvt key)
     --password=<pwd>            password for certificate file
     --remember                  store certificate details in registry (encrypted)
+
+	--<var>=<value>             sets an environment/macro variable for the 
+                                whole autopackage run.
+

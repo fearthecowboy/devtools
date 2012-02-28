@@ -254,7 +254,8 @@ namespace CoApp.Autopackage {
                             break;
 
                         default:
-                            throw new ConsoleException(Resources.UnknownParameter, arg);
+                            PackageSource.MacroValues.Add(arg, argumentParameters.LastOrDefault());
+                            break;
                     }
                 }
 

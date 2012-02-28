@@ -642,7 +642,7 @@ namespace CoApp.Autopackage {
                                 MajorMinorVersion = oldVersion.ToString(),
                                 VersionRange = BindingRedirect.VersionRange
                             },
-                        });
+                        }, null, Source.PostprocessValue);
 
                     var policyConfigFile = "policy.{0}.{1}.dll.config".format(oldVersion.ToString(), managedAssembly.Name).GetFileInTempFolder();
                     var policyFile = "policy.{0}.{1}.dll".format(oldVersion.ToString(), managedAssembly.Name).GetFileInTempFolder();

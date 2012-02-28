@@ -495,7 +495,7 @@ namespace CoApp.Developer.Toolkit.Publishing {
 
         public Architecture Architecture {
             get { return AssemblyIdentityElement.AttributeValue(ProcessorArchitectureAttribute); }
-            set { AssemblyIdentityElement.SetAttributeValue(ProcessorArchitectureAttribute, value == Architecture.Any ? "*" : value.ToString() ); }
+            set { AssemblyIdentityElement.SetAttributeValue(ProcessorArchitectureAttribute, value.ProcessorArchitecture ); }
         }
 
         public FourPartVersion Version {

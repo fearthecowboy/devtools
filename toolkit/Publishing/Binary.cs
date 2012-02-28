@@ -1,4 +1,14 @@
-﻿using System;
+﻿//-----------------------------------------------------------------------
+// <copyright company="CoApp Project">
+//     Copyright (c) 2011 Garrett Serack . All rights reserved.
+// </copyright>
+// <license>
+//     The software is licensed under the Apache 2.0 License (the "License")
+//     You may not use the software except in compliance with the License. 
+// </license>
+//-----------------------------------------------------------------------
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -998,7 +1008,9 @@ namespace CoApp.Developer.Toolkit.Publishing {
                             NativeResources.Value.Resources.Remove(k);
                         }
 
-                        var manifestResource = new ManifestResource {ManifestText = Manifest.Value.ToString(), Language = 1033};
+                        var IsLibrary = Path.GetExtension(OriginalFilename).ToLower() == ".dll";
+
+                        var manifestResource = new ManifestResource(IsLibrary ? ManifestType.IsolationAware : ManifestType.CreateProcess) { ManifestText = Manifest.Value.ToString(), Language = 1033 };
                         // GS01: I'm hardcoding this for now. We're probably gonna have to be way smarter about this.
                         NativeResources.Value.Resources.Add(new ResourceId(ResourceTypes.RT_MANIFEST), new List<Resource> {
                             manifestResource

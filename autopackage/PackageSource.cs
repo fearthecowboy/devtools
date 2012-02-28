@@ -86,9 +86,24 @@ namespace CoApp.Autopackage {
 
         internal Dictionary<string, string> MacroValues = new Dictionary<string, string>();
 
+        internal string PostprocessValue( string value ) {
+            if( string.IsNullOrEmpty(value) && value.Contains("[]")) {
+                return value.Replace("[]", "");
+            }
+            return value;
+        }
+
         internal string GetMacroValue(string valuename) {
             if( valuename == "DEFAULTLAMBDAVALUE") {
                 return "${each.Path}";
+            }
+
+            string defaultValue = null;
+
+            if (valuename.Contains("??")) {
+                var prts = valuename.Split(new[] { '?' }, StringSplitOptions.RemoveEmptyEntries);
+                defaultValue = prts.Length > 1 ? prts[1].Trim() : string.Empty;
+                valuename = prts[0];
             }
 
             var parts = valuename.Split('.');
@@ -106,7 +121,7 @@ namespace CoApp.Autopackage {
                 }
             }
 
-            return DefineRules.GetPropertyValue(valuename) ?? (MacroValues.ContainsKey(valuename) ? MacroValues[valuename] : Environment.GetEnvironmentVariable(valuename));
+            return DefineRules.GetPropertyValue(valuename) ?? (MacroValues.ContainsKey(valuename) ? MacroValues[valuename] : Environment.GetEnvironmentVariable(valuename)) ?? defaultValue;
         }
 
         internal IEnumerable<object> GetFileCollection(string collectionname) {
@@ -139,6 +154,7 @@ namespace CoApp.Autopackage {
             var result = PropertySheet.Load(autopackageSourceFile);
             result.GetCollection += GetFileCollection;
             result.GetMacroValue += GetMacroValue;
+            result.PostprocessProperty += PostprocessValue;
 
             PropertySheets = new[] {result, template};
             

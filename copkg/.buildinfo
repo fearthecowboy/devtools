@@ -140,7 +140,7 @@ anycpu {
 
 clean {
     default: no;
-    
+
     clean-command: @"
         rmdir /s /q output intermediate  > nul 2>&1
         for /d %%v in (*) do if exist %%v\obj rmdir /s /q %%v\obj        

@@ -15,8 +15,11 @@ namespace CoApp.Ptk {
     using System.Linq;
     using System.Reflection;
     using Toolkit.Configuration;
+    using Toolkit.Engine;
+    using Toolkit.Engine.Client;
     using Toolkit.Exceptions;
     using Toolkit.Extensions;
+    using Toolkit.Network;
     using Toolkit.Scripting.Languages.PropertySheet;
     using Toolkit.Utility;
 
@@ -47,6 +50,9 @@ pTK [options] action [buildconfiguration...]
     --mingw-install=<path>      specifies the location of the mingw install
     --msys-install=<path>       specifies the location of the msys install
 
+    --<var>=<value>             sets an environment/macro variable for the 
+                                whole ptk run.
+
     Actions:
         build                   builds the product
 
@@ -67,6 +73,13 @@ pTK [options] action [buildconfiguration...]
 
 //        trace                   performs a build using CoApp Trace to gather 
 //                                build data 
+
+
+
+        private readonly PackageManager _pm = PackageManager.Instance;
+        private PackageManagerMessages _messages;
+
+
 
 
 
@@ -466,8 +479,15 @@ pTK [options] action [buildconfiguration...]
 
                     case "help":
                         return Help();
+
+                    default:
+                        _originalEnvironment.Add(arg,  argumentParameters.LastOrDefault() );
+                        break;
                 }
             }
+
+            // _originalEnvironment.Add("COAPP", CoApp.Toolkit.Engine.PackageManagerSettings.CoAppRootDirectory);
+            _originalEnvironment.Add("COAPP", "C:/programdata/");
 
             while (string.IsNullOrEmpty(buildinfo) || !File.Exists(buildinfo)) {
                 // if the user didn't pass in the file, walk up the tree to find the first directory that has a COPKG\.buildinfo file 
@@ -489,8 +509,33 @@ pTK [options] action [buildconfiguration...]
             // tell the user what we are
             Logo();
 
+
             
             #endregion
+
+            // connect to coapp service
+            _pm.ConnectAndWait("coapp-cli-client", null, 5000);
+
+            _messages = new PackageManagerMessages {
+                UnexpectedFailure = UnexpectedFailure,
+                NoPackagesFound = NoPackagesFound,
+                PermissionRequired = OperationRequiresPermission,
+                Error = MessageArgumentError,
+                RequireRemoteFile = (canonicalName, remoteLocations, localFolder, force) => Downloader.GetRemoteFile(canonicalName, remoteLocations, localFolder, force, new RemoteFileMessages {
+                    Progress = (itemUri, percent) => {
+                        "Downloading {0}".format(itemUri.AbsoluteUri).PrintProgressBar(percent);
+                    },
+                    Completed = (itemUri) => {
+                        Console.WriteLine();
+                    }
+                }, _messages),
+                OperationCancelled = CancellationRequested,
+                PackageSatisfiedBy = (original, satisfiedBy) => {
+                    original.SatisfiedBy = satisfiedBy;
+                },
+                PackageBlocked = BlockedPackage,
+                UnknownPackage = UnknownPackage,
+            };
 
             // set up several tools we need
             _cmdexe = new ProcessUtility("cmd.exe");
@@ -599,8 +644,16 @@ pTK [options] action [buildconfiguration...]
                 DefineRules = _propertySheet.Rules.Where(each => each.Id == "define" && each.Name == "*").ToArray();
 
                 _propertySheet.GetMacroValue += (valueName) => {
-                    return (from rule in DefineRules where rule.HasProperty(valueName) select rule[valueName].Value).FirstOrDefault() ?? Environment.GetEnvironmentVariable(valueName);
+                    string defaultValue = null;
+                    if( valueName.Contains("??")) {
+                        var parts = valueName.Split(new[] {'?'}, StringSplitOptions.RemoveEmptyEntries);
+                        defaultValue = parts.Length > 1 ? parts[1].Trim() : string.Empty;
+                        valueName = parts[0];
+                    }
+
+                    return (from rule in DefineRules where rule.HasProperty(valueName) select rule[valueName].Value).FirstOrDefault() ?? Environment.GetEnvironmentVariable(valueName) ?? defaultValue;
                 };
+
                 _propertySheet.GetCollection += (collectionName) => {
                     return Enumerable.Empty<object>();
                 };
@@ -1092,7 +1145,43 @@ REM ===================================================================
 
                 // build dependencies first
                 BuildDependencies(build);
-                     
+
+                // install required packages...
+                var requires = build["requires"];
+                if( requires != null ) {
+                    foreach( var pkg in requires.Values ) {
+                        Console.WriteLine("Looking for {0}", pkg);
+                        var installedPkgs = _pm.GetPackages(pkg, installed:true,messages:_messages).Result;
+                        if( !installedPkgs.Any()) {
+                            // there isn't a matching installed package, we'd better install one.
+                            var pkgToInstall = _pm.GetPackages(pkg, installed: false, latest:true,messages:_messages).Result;
+                            bool failed = false;
+                            _pm.InstallPackage(pkgToInstall.First().CanonicalName, autoUpgrade: true, messages: new PackageManagerMessages {
+                                InstallingPackageProgress = (canonicalName, progress, overallProgress) => {
+                                    // installation progress
+                                    ConsoleExtensions.PrintProgressBar("Installing: {0}".format(canonicalName), progress);
+                                },
+
+                                InstalledPackage = (canonicalName) => {
+                                    // completed install of package 
+                                    Console.WriteLine();
+                                },
+
+                                FailedPackageInstall = (canonicalName, filename, reason) => {
+                                    // failed install of package 
+                                    Fail("Unable to install '{0}' -- {1}", canonicalName, reason);
+                                    failed = true;
+                                },
+                            }.Extend(_messages)).Wait();
+
+                            if( failed ) {
+                                throw new ConsoleException("Unable to install dependent package.");
+                            }
+                        }
+                    }
+                }
+
+
                 SetCompilerSdkAndPlatform(build);
 
                 // read the build command from PropertySheet
@@ -1268,6 +1357,34 @@ REM ===================================================================
         private IEnumerable<string> Hg(string cmdLine) {
             _hgexe.Exec(cmdLine);
             return from line in _hgexe.StandardOut.Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries) where !line.ToLower().Contains("copkg") select line;
+        }
+
+        private void CancellationRequested(string obj) {
+            Console.WriteLine("Cancellation Requested.");
+        }
+
+        private void MessageArgumentError(string arg1, string arg2, string arg3) {
+            throw new ConsoleException("Error from service: {0}", arg3);
+        }
+
+        private void OperationRequiresPermission(string policyName) {
+            Console.WriteLine("Operation requires permission Policy:{0}", policyName);
+        }
+
+        private void NoPackagesFound() {
+            Console.WriteLine("Did not find any packages.");
+        }
+
+        private void UnexpectedFailure(Exception obj) {
+            throw new ConsoleException("SERVER EXCEPTION: {0}\r\n{1}", obj.Message, obj.StackTrace);
+        }
+
+        private void UnknownPackage(string canonicalName) {
+            Console.WriteLine("Unknown Package {0}", canonicalName);
+        }
+
+        private void BlockedPackage(string canonicalName) {
+            Console.WriteLine("Package {0} is blocked", canonicalName);
         }
 
         #region fail/help/logo

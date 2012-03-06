@@ -167,7 +167,7 @@ namespace CoApp.RepositoryService {
                 foreach( var host in _hosts ) {
                     foreach( var port in _ports ) {
                         foreach( var path in _paths.Keys) {
-                            
+                            Console.WriteLine("Adding `http://{0}:{1}{2}`".format(host, port, path));
                             _listener.Prefixes.Add("http://{0}:{1}{2}".format(host, port, path));
                         }
                     }
@@ -223,7 +223,7 @@ namespace CoApp.RepositoryService {
 
                                 handlerTask = handler.Put(response,relativePath, putData);
                             } catch (Exception e) {
-                                Console.WriteLine("{0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
+                                HandleException(e);
                                 response.StatusCode = 500;
                                 response.Close();
                             }
@@ -233,7 +233,7 @@ namespace CoApp.RepositoryService {
                             try {
                                 handlerTask = handler.Head(response, relativePath, new UrlEncodedMessage(relativePath + "?" + url.Query));
                             } catch (Exception e) {
-                                Console.WriteLine("{0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
+                                HandleException(e);
                                 response.StatusCode = 500;
                                 response.Close();
                             }
@@ -243,7 +243,7 @@ namespace CoApp.RepositoryService {
                             try {
                                 handlerTask = handler.Get(response, relativePath, new UrlEncodedMessage(relativePath + "?" + url.Query));
                             } catch (Exception e) {
-                                Console.WriteLine("{0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
+                                HandleException(e);
                                 response.StatusCode = 500;
                                 response.Close();
                             }
@@ -261,7 +261,7 @@ namespace CoApp.RepositoryService {
 
                                 handlerTask = handler.Post(response, relativePath, new UrlEncodedMessage(relativePath + "?" + Encoding.UTF8.GetString(postData)));
                             } catch (Exception e) {
-                                Console.WriteLine("{0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
+                                HandleException(e);
                                 response.StatusCode = 500;
                                 response.Close();
                             }
@@ -272,7 +272,7 @@ namespace CoApp.RepositoryService {
                         handlerTask.ContinueWith( (antecedent2) => {
                             if (antecedent2.IsFaulted && antecedent2.Exception != null) {
                                 var e = antecedent2.Exception.InnerException;
-                                Console.WriteLine("{0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
+                                HandleException(e);
                                 response.StatusCode = 500;
                             }
 
@@ -284,9 +284,17 @@ namespace CoApp.RepositoryService {
                         response.Close();
                     }
                 } catch (Exception e) {
-                    Console.WriteLine("{0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
+                    HandleException(e);
                 }
             }, TaskContinuationOptions.AttachedToParent);
+        }
+
+        public static void HandleException(Exception e) {
+            if( e is AggregateException ) {
+                e = (e as AggregateException).Flatten().InnerExceptions[0];
+            }
+
+            Console.WriteLine("{0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
         }
     }
 }

@@ -1008,7 +1008,7 @@ namespace CoApp.Developer.Toolkit.Publishing {
                             NativeResources.Value.Resources.Remove(k);
                         }
 
-                        var IsLibrary = Path.GetExtension(OriginalFilename).ToLower() == ".dll";
+                        var IsLibrary = Path.GetExtension(Filename).ToLower() == ".dll";
 
                         var manifestResource = new ManifestResource(IsLibrary ? ManifestType.IsolationAware : ManifestType.CreateProcess) { ManifestText = Manifest.Value.ToString(), Language = 1033 };
                         // GS01: I'm hardcoding this for now. We're probably gonna have to be way smarter about this.

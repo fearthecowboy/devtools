@@ -180,7 +180,7 @@
                                 }
                             }
                         } catch( Exception e ) {
-                            Console.WriteLine("\r\n\r\n{0} - {1}\r\n\r\n", e.Message, e.StackTrace);
+                            Listener.HandleException(e);
                             return;
                         }
 

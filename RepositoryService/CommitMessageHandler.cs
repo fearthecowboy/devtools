@@ -28,8 +28,6 @@ namespace CoApp.RepositoryService {
                 _tweeter = new Tweeter(twitterHandle);
             }
             _aliases = aliases;
-
-            Environment.SetEnvironmentVariable("PATH", @"c:\git\cmd;c:\git\bin;c:\tools\bin;c:\tools" + Environment.GetEnvironmentVariable("PATH"));
         }
 
         public override Task Get(HttpListenerResponse response, string relativePath, UrlEncodedMessage message) {
@@ -80,8 +78,8 @@ namespace CoApp.RepositoryService {
                             if (n < 0) {
                                 commitMessage = commitMessage.Substring(0, (commitMessage.Length + n) - 3) + "...";
                             }
-                            _tweeter.Tweet("[{0}]=>{1} via {2} {3}", repository, commitMessage, handle, commitUrl);
-                            Console.WriteLine("[{0}]=>{1} via {2} {3}", repository, commitMessage, handle, commitUrl);
+                            _tweeter.Tweet("{0} => {1} via {2} {3}", repository, commitMessage, handle, commitUrl);
+                            Console.WriteLine("{0} => {1} via {2} {3}", repository, commitMessage, handle, commitUrl);
                         });
 
                     }
@@ -90,35 +88,22 @@ namespace CoApp.RepositoryService {
                         Task.Factory.StartNew(() => {
                             try {
                                 Console.WriteLine("Rebuilding website.");
-
-                                Console.WriteLine("(1) Pulling from github");
-                                Environment.CurrentDirectory = @"c:\tools\new_coapp.org";
-                                if (_cmdexe.Exec(@"/c git.cmd pull") != 0) {
-                                    Console.WriteLine("Git Pull Failure:\r\n{0}", _cmdexe.StandardOut);
-                                    return;
-                                }
-
-                                Console.WriteLine("(2) Running DocPad Generate");
-                                var node = new ProcessUtility(@"tools\node.exe");
-                                if (node.Exec(@"node_modules\coffee-script\bin\coffee node_modules\docpad\bin\docpad generate") != 0) {
-                                    Console.WriteLine("DocPad Failure:\r\n{0}", node.StandardOut);
-                                    return;
-                                }
-
-                                Console.WriteLine("(3) Robocopying the site into the live directory");
-                                if (_robocopy.Exec(@"/MIR c:\tools\new_coapp.org\out e:\sitesroot\0") != 0) {
-                                    Console.WriteLine("Robocopy Failure:\r\n{0}", _robocopy.StandardOut);
+                                Environment.CurrentDirectory = Environment.GetEnvironmentVariable("STORAGE");
+                                if (_cmdexe.Exec(@"/c rebuild_site.cmd") != 0) {
+                                    Console.WriteLine("Site rebuild result:\r\n{0}", _cmdexe.StandardOut);
                                     return;
                                 }
 
                                 Console.WriteLine("Rebuilt Website.");
                             } catch( Exception e ) {
-                                Console.WriteLine("Error: {0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
+                                Listener.HandleException(e);
                             }
+
                         });
                     }    
                 } catch(Exception e) {
                     Console.WriteLine("Error handling uploaded package: {0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
+                    Listener.HandleException(e);
                     response.StatusCode = 500;
                     response.Close();
                 }
@@ -128,6 +113,7 @@ namespace CoApp.RepositoryService {
                 if (result.IsFaulted) {
                     var e = antecedent.Exception.InnerException;
                     Console.WriteLine("Error handling commit message: {0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
+                    Listener.HandleException(e);
                     response.StatusCode = 500;
                     response.Close();
                 }

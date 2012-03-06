@@ -198,6 +198,8 @@ namespace CoApp.Autopackage {
                 UnknownPackage = UnknownPackage,
             };
 
+            var macrovals = new Dictionary<string, string>();
+
             try {
                 // default:
                 var options = args.Where(each => each.StartsWith("--")).Switches();
@@ -254,7 +256,7 @@ namespace CoApp.Autopackage {
                             break;
 
                         default:
-                            PackageSource.MacroValues.Add(arg, argumentParameters.LastOrDefault());
+                            macrovals.Add(arg, last);
                             break;
                     }
                 }
@@ -281,7 +283,11 @@ namespace CoApp.Autopackage {
                 foreach (var file in allFiles) {
                     using (var popd = new PushDirectory(Path.GetDirectoryName(file.GetFullPath()))) {
                         Binary.UnloadAndResetAll();
+
                         PackageSource = new PackageSource();
+                        foreach( var k in macrovals.Keys) {
+                            PackageSource.MacroValues.Add(k, macrovals[k]);
+                        }
 
                         PackageSource.SigningCertPath = _signingCertPath;
                         PackageSource.SigningCertPassword = _signingCertPassword;

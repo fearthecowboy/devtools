@@ -6,8 +6,6 @@ using System.Text;
 namespace CoApp.Azure {
     using System.IO;
     using System.Security.Cryptography;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.Win32;
     using Microsoft.WindowsAzure;
     using Microsoft.WindowsAzure.StorageClient;
@@ -15,8 +13,8 @@ namespace CoApp.Azure {
     using Toolkit.Extensions;
     using RegistryView = Toolkit.Configuration.RegistryView;
 
-
-    public class CloudFileSystem {        
+    public class CloudFileSystem {       
+ 
         private CloudStorageAccount _account;
         private static RegistryView _accountSettings = RegistryView.User["Azure\\Accounts"];
         private CloudBlobClient _blobStore;
@@ -76,11 +74,15 @@ namespace CoApp.Azure {
         public IEnumerable<string> GetBlobNames( string containerName , string fileMask  = null) {
             if (ContainerExists(containerName)) {
                 var container = _blobStore.GetContainerReference(containerName);
-                var containerUri = new Uri(container.Uri.AbsoluteUri + "/" + containerName );
-                return container.ListBlobs(new BlobRequestOptions { UseFlatBlobListing = true }).Select(each => containerUri .MakeRelativeUri(each.Uri).ToString()).Where( each => each.NewIsWildcardMatch(fileMask, true, ""));
+                return container.ListBlobs(new BlobRequestOptions { UseFlatBlobListing = true }).Select(each => PathInContainer(each.Uri)).Where( each => each.IsWildcardMatch(fileMask));
             }
             return Enumerable.Empty<string>();
         } 
+
+        private static string PathInContainer( Uri path ) {
+            var result = path.AbsolutePath.Trim('/');
+            return result.Substring(result.IndexOf('/')+1);
+        }
 
         public IEnumerable<dynamic> GetBlobs( string containerName, string fileMask  = null ) {
             if( string.IsNullOrEmpty(fileMask) ) {
@@ -89,12 +91,15 @@ namespace CoApp.Azure {
 
             if (ContainerExists(containerName)) {
                 var container = _blobStore.GetContainerReference(containerName);
-                var containerUri = new Uri(container.Uri.AbsoluteUri + "/" + containerName );
-                return container.ListBlobs(new BlobRequestOptions { UseFlatBlobListing = true, BlobListingDetails = BlobListingDetails.All }).Where(each => containerUri.MakeRelativeUri(each.Uri).ToString().NewIsWildcardMatch(fileMask, true,"")).Select(each => {
+                
+                var blobs = container.ListBlobs(new BlobRequestOptions {UseFlatBlobListing = true, BlobListingDetails = BlobListingDetails.All});
+                var matchBlobs = blobs.Where(each => PathInContainer(each.Uri).IsWildcardMatch(fileMask)).ToArray();
+                
+                return matchBlobs.Select(each => {
                     var blob = (CloudBlob) each;
                     
                     return new {
-                        name = containerUri.MakeRelativeUri(each.Uri).ToString(),
+                        name = PathInContainer(each.Uri),
                         uri = each.Uri,
                         md5 = blob.Properties.ContentMD5,
                         date = blob.Properties.LastModifiedUtc.ToLocalTime(),

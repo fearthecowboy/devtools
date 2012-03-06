@@ -58,6 +58,7 @@ namespace CoApp.RepositoryService {
             var ports = new int[] { 80 };
             var commitMessage = "trigger";
             var packageUpload = "upload";
+            
             string localfeedLocation = null;
             string packageStoragePath = null;
             string packagePrefixUrl = null;
@@ -152,8 +153,6 @@ namespace CoApp.RepositoryService {
                 }
             }
 
-
-
             Tweeter.Init(Settings, options);
             Bitly.Init(Settings, options);
             CloudFileSystem cfs = null; 
@@ -188,12 +187,14 @@ namespace CoApp.RepositoryService {
                 Console.WriteLine("Press ctrl-c to stop the listener.");
 
                 while (true) {
-                    Thread.Sleep(1000);
+                    // one day, Ill put a check to restart the server in here.
+                    Thread.Sleep(60 * 1000);
+                    
                 }
 
                 listener.Stop();
             } catch(Exception e) {
-                Console.WriteLine("{0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
+                Listener.HandleException(e);
                 CancellationTokenSource.Cancel();
                 PackageManager.Instance.Disconnect();
             }

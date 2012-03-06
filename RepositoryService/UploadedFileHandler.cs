@@ -153,7 +153,15 @@ namespace CoApp.RepositoryService {
                                 // update the feed
                                 var Feed = new AtomFeed();
 
-                                if (!string.IsNullOrEmpty(_localfeedLocation) && File.Exists(_localfeedLocation)) {
+                                //load the feed from the _canonicalFeedUrl if we can
+                                string tmpFile = "tmpPackages.xml".GenerateTemporaryFilename();
+
+                                _canonicalFeedUrl.AbsoluteUri.GetBinaryFile(tmpFile);
+
+                                if (!string.IsNullOrEmpty(tmpFile) && File.Exists(tmpFile)) {
+                                    var originalFeed = AtomFeed.LoadFile(tmpFile);
+                                    Feed.Add(originalFeed.Items.Where(each => each is AtomItem).Select(each => each as AtomItem));
+                                } else if (!string.IsNullOrEmpty(_localfeedLocation) && File.Exists(_localfeedLocation)) {
                                     var originalFeed = AtomFeed.LoadFile(_localfeedLocation);
                                     Feed.Add(originalFeed.Items.Where(each => each is AtomItem).Select(each => each as AtomItem));
                                 }
@@ -226,7 +234,7 @@ namespace CoApp.RepositoryService {
                 antecedent => {
                     if (result.IsFaulted) {
                         var e = antecedent.Exception.InnerException;
-                        Console.WriteLine("Error handling uploaded package: {0} -- {1}\r\n{2}", e.GetType(), e.Message, e.StackTrace);
+                        Listener.HandleException(e);
                         response.StatusCode = 500;
                         response.Close();
                     }

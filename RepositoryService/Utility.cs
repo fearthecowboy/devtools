@@ -17,6 +17,7 @@ namespace CoApp.RepositoryService {
     using System.Text;
     using System.Threading.Tasks;
     using Toolkit.Configuration;
+    using Toolkit.Exceptions;
     using Toolkit.Extensions;
     using Toolkit.Tasks;
     using Twitterizer;
@@ -25,32 +26,23 @@ namespace CoApp.RepositoryService {
     public class Tweeter {
         private static string twitterKey;
         private static string twitterSecret;
-        
+        private static Dictionary<string, IEnumerable<string>> _options;
         private OAuthTokens tokens;
-        private static RegistryView TwitterSettings;
 
         public static void Init(RegistryView settingsRoot, Dictionary<string, IEnumerable<string>> options ) {
-            if (TwitterSettings == null) {
-                TwitterSettings = settingsRoot["twitter"];
+            _options = options;
+            foreach (var arg in _options.Keys) {
+                var argumentParameters = _options[arg];
+                var last = argumentParameters.LastOrDefault();
 
-                twitterKey = TwitterSettings["#key"].EncryptedStringValue;
-                twitterSecret = TwitterSettings["#secret"].EncryptedStringValue;
+                switch (arg) {
+                    case "twitter-key":
+                        twitterKey = last;
+                        break;
 
-                foreach (var arg in options.Keys) {
-                    var argumentParameters = options[arg];
-                    var last = argumentParameters.LastOrDefault();
-
-                    switch (arg) {
-                        case "twitter-key":
-                            twitterKey = last;
-                            TwitterSettings["#key"].EncryptedStringValue = twitterKey;
-                            break;
-
-                        case "twitter-secret":
-                            twitterSecret = last;
-                            TwitterSettings["#secret"].EncryptedStringValue = twitterSecret;
-                            break;
-                    }
+                    case "twitter-secret":
+                        twitterSecret = last;
+                        break;
                 }
             }
         }
@@ -62,45 +54,31 @@ namespace CoApp.RepositoryService {
         }
 
         public Tweeter(string twitterHandle) {
-            // get the access token info
-            string accessToken = TwitterSettings["#"+twitterHandle+"-accessToken"].EncryptedStringValue;
-            string accessSecret = TwitterSettings["#" + twitterHandle + "-accessSecret"].EncryptedStringValue;
+            try {
+                var accessToken = _options[twitterHandle + "-access-token"].Last();
+                var accessSecret = _options[twitterHandle + "-access-secret"].Last();
 
-            if (string.IsNullOrEmpty(accessToken)) {
-                var requestToken = OAuthUtility.GetRequestToken(twitterKey, twitterSecret, "oob");
-                var auth = OAuthUtility.BuildAuthorizationUri(requestToken.Token);
-
-                Console.WriteLine("User must authenticate at  {0}", auth.AbsoluteUri);
-
-                Process.Start(new ProcessStartInfo { FileName = auth.AbsoluteUri, UseShellExecute = true });
-                Console.Write("Enter the pin:");
-                var twitterPin = Console.ReadLine();
-
-                if (!string.IsNullOrEmpty(twitterPin)) {
-                    // has pin. let's get the access token.
-                    var token = OAuthUtility.GetAccessToken(twitterKey, twitterSecret, requestToken.Token, twitterPin);
-
-                    accessToken = token.Token;
-                    accessSecret = token.TokenSecret;
-
-                    // store it.
-                    TwitterSettings["#" + twitterHandle + "-accessToken"].EncryptedStringValue = accessToken;
-                    TwitterSettings["#" + twitterHandle + "-accessSecret"].EncryptedStringValue = accessSecret;
-                }
-            }
-
-            if (!string.IsNullOrEmpty(accessToken)) {
                 tokens = new OAuthTokens {
                     ConsumerKey = twitterKey,
                     ConsumerSecret = twitterSecret,
                     AccessToken = accessToken,
                     AccessTokenSecret = accessSecret
                 };
-            } 
+            } catch {
+                throw new ConsoleException("Unable to authenticate '{0}'", twitterHandle);
+            }
         }
 
         public Task<TwitterResponse<TwitterStatus>> Tweet(string format, params object[] args) {
-            return CanTweet ? Task<TwitterResponse<TwitterStatus>>.Factory.StartNew(() => TwitterStatus.Update(tokens, string.Format(format, args))) : CoTask.AsResultTask<TwitterResponse<TwitterStatus>>(null);
+            return CanTweet ? Task<TwitterResponse<TwitterStatus>>.Factory.StartNew(() => {
+                try {
+                    var status = TwitterStatus.Update(tokens, string.Format(format, args));
+                    return status;
+                } catch (Exception e) {
+                    Listener.HandleException(e);
+                }
+                return null;
+            }) : CoTask.AsResultTask<TwitterResponse<TwitterStatus>>(null);
         }
     }
 

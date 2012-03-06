@@ -128,7 +128,7 @@ Manifest Options:
         }
 
         private int Startup(IEnumerable<string> args) {
-            var options = args.Switches();
+            var options = args.Where(each => each.StartsWith("--")).Switches();
             var parameters = args.Parameters();
 
             foreach (var arg in options.Keys) {

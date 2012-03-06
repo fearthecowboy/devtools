@@ -143,7 +143,7 @@ pTK [options] action [buildconfiguration...]
         /// </summary>
         private readonly List<string> _tmpFiles= new List<string>();
         private string _searchPaths = "";
-        private PropertySheet _propertySheet;
+        internal static PropertySheet _propertySheet;
         internal Rule[] DefineRules;
 
         /// <summary>
@@ -418,7 +418,7 @@ pTK [options] action [buildconfiguration...]
         /// <param name="args">Command line parameters</param>
         /// <returns>Error codes (0 for success, non-zero on Error)</returns>
         private int main(IEnumerable<string> args) {
-            var options = args.Switches();
+            var options = args.Where(each => each.StartsWith("--")).Switches();
             var parameters = args.Parameters().ToArray();
 
             var buildinfo = string.Empty;
@@ -481,13 +481,14 @@ pTK [options] action [buildconfiguration...]
                         return Help();
 
                     default:
-                        _originalEnvironment.Add(arg,  argumentParameters.LastOrDefault() );
+                        _originalEnvironment.AddOrSet(arg, argumentParameters.LastOrDefault());
                         break;
                 }
             }
 
             // _originalEnvironment.Add("COAPP", CoApp.Toolkit.Engine.PackageManagerSettings.CoAppRootDirectory);
-            _originalEnvironment.Add("COAPP", "C:/programdata/");
+            _originalEnvironment.AddOrSet("COAPP", "C:/programdata/");
+
 
             while (string.IsNullOrEmpty(buildinfo) || !File.Exists(buildinfo)) {
                 // if the user didn't pass in the file, walk up the tree to find the first directory that has a COPKG\.buildinfo file 
@@ -700,16 +701,19 @@ pTK [options] action [buildconfiguration...]
             try {
                 switch (command) {
                     case "build":
+                        ResetEnvironment();
                         Build(builds);
 
                         break;
                     case "clean":
+                        ResetEnvironment();
                         Clean(builds);
                         using (new ConsoleColors(ConsoleColor.White, ConsoleColor.Black)) {
                             Console.WriteLine("Project Cleaned.");
                         }
                         break;
                     case "verify":
+                        ResetEnvironment();
                         // Clean(builds); // clean up other builds in the list first.
                         Verify(builds);
                         using (new ConsoleColors(ConsoleColor.White, ConsoleColor.Black)) {
@@ -717,6 +721,7 @@ pTK [options] action [buildconfiguration...]
                         }
                         break;
                     case "status":
+                        ResetEnvironment();
                         Status(builds);
                         using (new ConsoleColors(ConsoleColor.White, ConsoleColor.Black)) {
                             Console.WriteLine("Project is in clean state.");
@@ -891,12 +896,7 @@ REM ===================================================================
                     var sets = build["set"];
                     if (sets != null) {
                         foreach (var label in sets.Labels) {
-                            if (_originalEnvironment.ContainsKey(label)) {
-                                _originalEnvironment[label] = sets[label].Value;
-                            }
-                            else {
-                                _originalEnvironment.Add(label, sets[label].Value);
-                            }
+                            _originalEnvironment.AddOrSet(label, sets[label].Value);
                         }
                     }
 
@@ -1134,12 +1134,7 @@ REM ===================================================================
                 var sets = build["set"];
                 if (sets != null) {
                     foreach( var label in sets.Labels ) {
-                        if (_originalEnvironment.ContainsKey(label)) {
-                            _originalEnvironment[label] = sets[label].Value;
-                        }
-                        else {
-                            _originalEnvironment.Add(label, sets[label].Value);
-                        }
+                        _originalEnvironment.AddOrSet(label, sets[label].Value);
                     }
                 }
 
@@ -1212,11 +1207,7 @@ REM ===================================================================
             var sets = build["set"];
             if (sets != null) {
                 foreach (var label in sets.Labels) {
-                    if (_originalEnvironment.ContainsKey(label)) {
-                        _originalEnvironment[label] = sets[label].Value;
-                    } else {
-                        _originalEnvironment.Add(label, sets[label].Value);
-                    }
+                    _originalEnvironment.AddOrSet(label, sets[label].Value);
                 }
             }
 
@@ -1433,5 +1424,16 @@ REM ===================================================================
         }
 
         #endregion
+    }
+
+    public static class DictionaryExtension {
+        public static TValue AddOrSet<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value) where TValue : class {
+            if( dictionary.ContainsKey(key) ) {
+                dictionary[key] = value;
+            } else {
+                dictionary.Add(key, value);
+            }
+            return value;
+        }
     }
 }

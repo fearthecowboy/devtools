@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 
 namespace CoApp.Bootstrapper {
+    using System.Collections;
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
@@ -17,6 +18,75 @@ namespace CoApp.Bootstrapper {
     using System.Windows.Input;
     using Microsoft.Win32;
 
+
+    public enum ProgressWeight {
+        Tiny = 1,
+        Low,
+        Medium,
+        Large = 5,
+        Huge = 10,
+        Massive = 20,
+    }
+
+    public class ProgressFactor {
+        internal int Weight;
+        private int _progress;
+
+        public int Progress {
+            get { return _progress; }
+            set {
+                if (value >= 0 && value <= 100 && _progress != value) {
+                    _progress = value;
+                    Tracker.Updated();
+                }
+            }
+        }
+        public ProgressFactor(ProgressWeight weight) {
+            Weight = (int)weight;
+        }
+
+        internal MultifactorProgressTracker Tracker;
+    }
+
+    public class MultifactorProgressTracker : IEnumerable {
+        private readonly List<ProgressFactor> _factors = new List<ProgressFactor>();
+        private int _total;
+        public int Progress { get; private set; }
+
+        public delegate void Changed(int progress);
+        public event Changed ProgressChanged;
+
+        private void RecalcTotal() {
+            _total = _factors.Sum(each => each.Weight * 100);
+            Updated();
+        }
+
+        public void Updated() {
+            var progress = _factors.Sum(each => each.Weight * each.Progress);
+            progress = (progress * 100 / _total);
+
+            if (Progress != progress) {
+                Progress = progress;
+                if (ProgressChanged != null) {
+                    ProgressChanged(Progress);
+                }
+            }
+        }
+
+        public static implicit operator int(MultifactorProgressTracker progressTracker) {
+            return progressTracker.Progress;
+        }
+
+        public void Add(ProgressFactor factor) {
+            _factors.Add(factor);
+            factor.Tracker = this;
+            RecalcTotal();
+        }
+
+        public IEnumerator GetEnumerator() {
+            throw new NotImplementedException();
+        }
+    }
 
 
     internal class SingleStep {
@@ -35,6 +105,23 @@ namespace CoApp.Bootstrapper {
         private static int _currentProgress;
         internal static bool Cancelling;
         internal static Task InstallTask;
+        
+        public static ProgressFactor ResourceDllDownload= new ProgressFactor(ProgressWeight.Tiny);
+        public static ProgressFactor CoAppPackageDownload = new ProgressFactor(ProgressWeight.Tiny);
+        public static ProgressFactor CoAppPackageInstall = new ProgressFactor(ProgressWeight.Tiny);
+        public static ProgressFactor EngineStartup = new ProgressFactor(ProgressWeight.Low);
+
+        public static MultifactorProgressTracker Progress;
+
+        static SingleStep() {
+            Progress = new MultifactorProgressTracker() {ResourceDllDownload, CoAppPackageDownload, CoAppPackageInstall, EngineStartup};
+
+            Progress.ProgressChanged += p => {
+                if (MainWindow.MainWin != null) {
+                    MainWindow.MainWin.Updated();
+                }
+            };
+        }
 
         [STAThreadAttribute]
         [LoaderOptimization(LoaderOptimization.MultiDomainHost)]
@@ -47,8 +134,6 @@ namespace CoApp.Bootstrapper {
                 Logger.Messages = true;
                 Logger.Warnings = true;
             }
-
-            
 
             Logger.Warning("Startup :" + commandline);
             // Ensure that we are elevated. If the app returns from here, we are.
@@ -156,15 +241,6 @@ namespace CoApp.Bootstrapper {
             }
         }
 
-        public static int ActualPercent {
-            get { return _actualPercent; }
-            set {
-                _actualPercent = value;
-                if (MainWindow.MainWin != null) {
-                    MainWindow.MainWin.Updated();
-                }
-            }
-        }
 
         private static string GetRegistryValue(string key, string valueName) {
             try {
@@ -205,14 +281,12 @@ namespace CoApp.Bootstrapper {
             }
 
             Logger.Warning("Running CoApp (bypassing UI:{0})", bypassingBootstrapUI);
-
-            Logger.Warning("Creating Domain");
             var appDomain = AppDomain.CreateDomain("tmp" + DateTime.Now.Ticks);
 
             // stage one: ensure the engine is running, and make sure that it's finshed warming up.
             IComparable prep = null;
 
-#if DEBUG
+#if DEBUG_X
             var localAssembly = AcquireFile("CoApp.Toolkit.Engine.Client.dll");
             Logger.Message("Local Assembly: " + localAssembly);
             if (!string.IsNullOrEmpty(localAssembly)) {
@@ -239,16 +313,14 @@ namespace CoApp.Bootstrapper {
 
             // ok, let's spin while we warm up the engine.
             // if the UI is showing, it can monitor the progress.
-            var percentReady = 0;
-            while ((percentReady = prep.CompareTo(null)) < 100) {
+            
+            while ((EngineStartup.Progress = prep.CompareTo(null)) < 100) {
                 Thread.Sleep(10); // yeah, I'm lazy. Get Bent.
-                ActualPercent = 80+(percentReady/5);
                 if (Cancelling) {
                     return;
                 }
             }
-            // *try* to get the UI to look done.
-            ActualPercent = 100;
+            EngineStartup.Progress = 100;
 
             // engine is now warm. If we're bypassing the UI, then we can jump straight to the Installer.
             if (bypassingBootstrapUI) {
@@ -269,10 +341,13 @@ namespace CoApp.Bootstrapper {
             if( Cancelling ) {
                 return;
             }
+
+            EngineStartup.Progress = 100;
+
             // stage two: close our bootstrap GUI, and start the Installer in the new AppDomain, 
             // of course, this has all got to happen on the original thread. *sigh*
             Logger.Message("Got to Installer Stage Two");
-#if DEBUG
+#if DEBUG_X
             var localAssembly = AcquireFile("CoApp.Toolkit.Engine.Client.dll");
             Logger.Message("Local Assembly: " + localAssembly);
 
@@ -307,13 +382,13 @@ namespace CoApp.Bootstrapper {
             var lcid = CultureInfo.CurrentCulture.LCID;
             var localizedName = String.Format("{0}.{1}{2}", name, lcid, extension);
             string f;
+            progressCompleted = progressCompleted ?? (p =>  {});
 
             // is the localized file in the bootstrap folder?
             if (!String.IsNullOrEmpty(BootstrapFolder)) {
                 f = Path.Combine(BootstrapFolder, localizedName);
-                Logger.Warning("   (in Bootstrap folder?):" + f);
                 if (ValidFileExists(f)) {
-                    Logger.Warning("   Yes.");
+                    progressCompleted(100);
                     return f;
                 }
             }
@@ -321,17 +396,15 @@ namespace CoApp.Bootstrapper {
             // is the localized file in the msi folder?
             if (!String.IsNullOrEmpty(MsiFolder)) {
                 f = Path.Combine(MsiFolder, localizedName);
-                Logger.Warning("   (in Msi folder?):" + f);
                 if (ValidFileExists(f)) {
-                    Logger.Warning("   Yes.");
+                    progressCompleted(100);
                     return f;
                 }
             }
             // try the MSI for the localized file 
             f = GetFileFromMSI(localizedName);
-            Logger.Warning("   (in Msi?):" + f);
             if (ValidFileExists(f)) {
-                Logger.Warning("   Yes.");
+                progressCompleted(100);
                 return f;
             }
 
@@ -342,9 +415,8 @@ namespace CoApp.Bootstrapper {
             // is the standard file in the bootstrap folder?
             if (!String.IsNullOrEmpty(BootstrapFolder)) {
                 f = Path.Combine(BootstrapFolder, filename);
-                Logger.Warning("   (in Bootstrap folder?):" + f);
                 if (ValidFileExists(f)) {
-                    Logger.Warning("   Yes.");
+                    progressCompleted(100);
                     return f;
                 }
             }
@@ -352,17 +424,16 @@ namespace CoApp.Bootstrapper {
             // is the standard file in the msi folder?
             if (!String.IsNullOrEmpty(MsiFolder)) {
                 f = Path.Combine(MsiFolder, filename);
-                Logger.Warning("   (in Msi folder?):" + f);
+                
                 if (ValidFileExists(f)) {
-                    Logger.Warning("   Yes.");
+                    progressCompleted(100);
                     return f;
                 }
             }
             // try the MSI for the regular file 
             f = GetFileFromMSI(filename);
-            Logger.Warning("   (in MSI?):" + f);
             if (ValidFileExists(f)) {
-                Logger.Warning("   Yes.");
+                progressCompleted(100);
                 return f;
             }
 
@@ -373,36 +444,33 @@ namespace CoApp.Bootstrapper {
             // try localized file off the bootstrap server
             if (!String.IsNullOrEmpty(BootstrapServerUrl.Value)) {
                 f = AsyncDownloader.Download(BootstrapServerUrl.Value, localizedName, progressCompleted);
-                Logger.Warning("   (on bootstrap server?):" + f);
                 if (ValidFileExists(f)) {
-                    Logger.Warning("   Yes.");
+                    progressCompleted(100);
                     return f;
                 }
             }
 
             // try localized file off the coapp server
             f = AsyncDownloader.Download(CoAppUrl, localizedName, progressCompleted);
-            Logger.Warning("   (on coapp server?):" + f);
             if (ValidFileExists(f)) {
-                Logger.Warning("   Yes.");
+                progressCompleted(100);
                 return f;
             }
 
             // try normal file off the bootstrap server
             if (!String.IsNullOrEmpty(BootstrapServerUrl.Value)) {
                 f = AsyncDownloader.Download(BootstrapServerUrl.Value, filename, progressCompleted);
-                Logger.Warning("   (on bootstrap server?):" + f);
                 if (ValidFileExists(f)) {
-                    Logger.Warning("   Yes.");
+                    progressCompleted(100);
                     return f;
                 }
             }
 
             // try normal file off the coapp server
             f = AsyncDownloader.Download(CoAppUrl, filename, progressCompleted);
-            Logger.Warning("   (on coapp server?):" + f);
+            
             if (ValidFileExists(f)) {
-                Logger.Warning("   Yes.");
+                progressCompleted(100);
                 return f;
             }
 
@@ -501,10 +569,6 @@ namespace CoApp.Bootstrapper {
         public static string ProgramFilesAnyFolder {
             get {
                 var root = CoAppRootFolder.Value;
-
-                // try getting the directory using the environment variable first, let it fall thru to special folders.
-                // var programFilesAny = Environment.GetEnvironmentVariable("ProgramW6432");
-
                 var programFilesAny = GetSpecialFolderPath(KnownFolder.ProgramFiles);
                 
                 var any = Path.Combine(root, "program files");
@@ -561,7 +625,8 @@ namespace CoApp.Bootstrapper {
                         // if this is the CoApp MSI, we don't need to fetch the CoApp MSI.
                         if (!IsCoAppToolkitMSI(MsiFilename)) {
                             // get coapp.toolkit.msi
-                            file = AcquireFile("CoApp.Toolkit.msi", percentDownloaded => ActualPercent = percentDownloaded / 10);
+                            file = AcquireFile("CoApp.Toolkit.msi", percentDownloaded => CoAppPackageDownload.Progress = percentDownloaded);
+                            CoAppPackageDownload.Progress = 100;
 
                             if (!IsCoAppToolkitMSI(file)) {
                                 MainWindow.Fail(LocalizedMessage.IDS_UNABLE_TO_ACQUIRE_COAPP_INSTALLER, "Unable to download the CoApp Installer MSI");
@@ -570,7 +635,7 @@ namespace CoApp.Bootstrapper {
                         }
 
                         // We made it past downloading.
-                        ActualPercent = 10;
+                        
 
                         // bail if someone has told us to. (good luck!)
                         if (Cancelling) {
@@ -597,6 +662,7 @@ namespace CoApp.Bootstrapper {
                         Logger.Warning("Running MSI");
                         // install CoApp.Toolkit msi. Don't blink, this can happen FAST!
                         var result = NativeMethods.MsiInstallProduct(file, String.Format(@"TARGETDIR=""{0}"" ALLUSERS=1 COAPP_INSTALLED=1 REBOOT=REALLYSUPPRESS", ProgramFilesAnyFolder));
+                        CoAppPackageInstall.Progress = 100;
 
                         // set the ui hander back to nothing.
                         NativeMethods.MsiSetExternalUI(null, 0x400, IntPtr.Zero);
@@ -606,8 +672,6 @@ namespace CoApp.Bootstrapper {
 
                         // did we succeed?
                         if (result == 0) {
-                            ActualPercent = 80;  // if the UI has not shown, it will try short circuit in the window constructor.
-
                             // bail if someone has told us to. (good luck!)
                             if (Cancelling) {
                                 return;
@@ -674,11 +738,7 @@ namespace CoApp.Bootstrapper {
             }
 
             if (_currentTotalTicks > 0) {
-                // this will only return #s between 10 and 80. The last 20% of progress is for warmup.
-                var newPercent = (_currentProgress * 70 / _currentTotalTicks) + 10;
-                if (ActualPercent < newPercent) {
-                    ActualPercent = newPercent;
-                }
+                CoAppPackageInstall.Progress = _currentProgress * 100 / _currentTotalTicks;
             }
 
             // if the cancel flag is set, tell MSI

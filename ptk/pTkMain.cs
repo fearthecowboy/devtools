@@ -82,7 +82,6 @@ pTK [options] action [buildconfiguration...]
 
 
 
-
         /// <summary>
         /// Wrapper for the Windows command line
         /// </summary>
@@ -515,7 +514,6 @@ pTK [options] action [buildconfiguration...]
             #endregion
 
             // connect to coapp service
-            _pm.ConnectAndWait("coapp-cli-client", null, 5000);
 
             _messages = new PackageManagerMessages {
                 UnexpectedFailure = UnexpectedFailure,
@@ -604,7 +602,7 @@ pTK [options] action [buildconfiguration...]
 
             _vcvarsallbat10 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "vc**", "10.0**" }, rememberMissingFile: true, tagWithCosmeticVersion: "10.0");
             _vcvarsallbat9 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "vc**", "9.0**" }, rememberMissingFile: true, tagWithCosmeticVersion: "9.0");
-            _vcvarsallbat8 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "vc**", "8.0**" }, rememberMissingFile: true, tagWithCosmeticVersion: "8.0");
+            _vcvarsallbat8 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "vc**", "8**" }, rememberMissingFile: true, tagWithCosmeticVersion: "8.0");
             _vcvarsallbat7 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "vc**", "7.0**" }, rememberMissingFile: true, tagWithCosmeticVersion: "7.0");
             _vcvarsallbat71 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "vc**", "7.1**" }, rememberMissingFile: true, tagWithCosmeticVersion: "7.1");
             _vcvars32bat = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvars32.bat", includeFilters: new[] { "vc98**" }, rememberMissingFile: true, tagWithCosmeticVersion: "6");
@@ -1144,6 +1142,9 @@ REM ===================================================================
                 // install required packages...
                 var requires = build["requires"];
                 if( requires != null ) {
+                    if( !_pm.IsConnected ) {
+                        _pm.ConnectAndWait("coapp-cli-client", null, 5000);
+                    }
                     foreach( var pkg in requires.Values ) {
                         Console.WriteLine("Looking for {0}", pkg);
                         var installedPkgs = _pm.GetPackages(pkg, installed:true,messages:_messages).Result;

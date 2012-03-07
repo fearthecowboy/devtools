@@ -196,7 +196,6 @@ namespace CoApp.RepositoryService {
             } catch(Exception e) {
                 Listener.HandleException(e);
                 CancellationTokenSource.Cancel();
-                PackageManager.Instance.Disconnect();
             }
 
             return 0;

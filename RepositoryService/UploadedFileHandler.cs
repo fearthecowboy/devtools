@@ -154,14 +154,11 @@ namespace CoApp.RepositoryService {
                                 var Feed = new AtomFeed();
 
                                 //load the feed from the _canonicalFeedUrl if we can
-                                string tmpFile = "tmpPackages.xml".GenerateTemporaryFilename();
+                                _cloudFileSystem.ReadBlob(_packageStorageFolder, Path.GetFileName(_localfeedLocation).ToLower(), _localfeedLocation, (progress) => {
+                                    ConsoleExtensions.PrintProgressBar("Getting package feed from blob store {0} => {1}".format(_localfeedLocation, _packageStorageFolder), progress);
+                                });
 
-                                _canonicalFeedUrl.AbsoluteUri.GetBinaryFile(tmpFile);
-
-                                if (!string.IsNullOrEmpty(tmpFile) && File.Exists(tmpFile)) {
-                                    var originalFeed = AtomFeed.LoadFile(tmpFile);
-                                    Feed.Add(originalFeed.Items.Where(each => each is AtomItem).Select(each => each as AtomItem));
-                                } else if (!string.IsNullOrEmpty(_localfeedLocation) && File.Exists(_localfeedLocation)) {
+                                if (!string.IsNullOrEmpty(_localfeedLocation) && File.Exists(_localfeedLocation)) {
                                     var originalFeed = AtomFeed.LoadFile(_localfeedLocation);
                                     Feed.Add(originalFeed.Items.Where(each => each is AtomItem).Select(each => each as AtomItem));
                                 }

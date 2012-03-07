@@ -97,21 +97,20 @@ namespace CoApp.Bootstrapper {
         }
 
         private const string HelpUrl = "http://coapp.org/help/";
-        public int CurrentProgress { get { return SingleStep.ActualPercent; } set { SingleStep.ActualPercent = value; } }
         
         internal static readonly Lazy<NativeResourceModule> NativeResources = new Lazy<NativeResourceModule>(() => {
             try {
-                return new NativeResourceModule(SingleStep.AcquireFile("coapp.resources.dll"));
+                return new NativeResourceModule(SingleStep.AcquireFile("coapp.resources.dll", progressCompleted => SingleStep.ResourceDllDownload.Progress = progressCompleted));
             }
             catch {
                 return null;
+            } finally {
+                SingleStep.ResourceDllDownload.Progress = 100;
             }
         }, LazyThreadSafetyMode.PublicationOnly);
 
         public MainWindow() {
-            Logger.Warning("In Window Constructor.");
             InitializeComponent();
-            Logger.Warning("Component Initialized.");
             Opacity = 0;
 
             Task.Factory.StartNew(() => {
@@ -127,7 +126,7 @@ namespace CoApp.Bootstrapper {
             });
             
             // try to short circuit early
-            if( CurrentProgress >= 98 && !SingleStep.Cancelling ) {
+            if (SingleStep.Progress.Progress >= 98 && !SingleStep.Cancelling) {
                 MainWin = this;
                 return;
             }
@@ -136,7 +135,7 @@ namespace CoApp.Bootstrapper {
             Loaded += (o, e) => {
                 Topmost = false;
                 // if we're really close to the end, let's not even bother with the progress window.
-                if (CurrentProgress < 95) {
+                if (SingleStep.Progress.Progress < 95) {
                     Opacity = 1;
                 }
                 MainWin = this;
@@ -186,7 +185,7 @@ namespace CoApp.Bootstrapper {
                     SingleStep.Cancelling = true; // prevents any other errors/messages.
                     // wait for MSI to clean up ?
                     while ( SingleStep.InstallTask != null ) {
-                        SingleStep.InstallTask.Wait(100);
+                        SingleStep.InstallTask.Wait(60);
                     }
                     Application.Current.Shutdown();        
                 }
@@ -196,7 +195,7 @@ namespace CoApp.Bootstrapper {
         }
 
         internal void Updated() {
-            Dispatcher.BeginInvoke((Action)delegate { installationProgress.Value = CurrentProgress; });
+            Dispatcher.BeginInvoke((Action)delegate { installationProgress.Value = SingleStep.Progress.Progress; });
         }
     }
 }

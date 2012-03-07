@@ -151,7 +151,6 @@ namespace CoApp.mkRepo {
             } catch (ConsoleException failure) {
                 Fail("{0}\r\n\r\n    {1}", failure.Message, Resources.ForCommandLineHelp);
                 CancellationTokenSource.Cancel();
-                _pm.Disconnect();
             }
             return 0;
         }
@@ -234,12 +233,10 @@ namespace CoApp.mkRepo {
             var trigger = new ManualResetEvent(!_pm.IsConnected || _pm.ActiveCalls == 0);
             Action whenTriggered = () => trigger.Set();
 
-            _pm.Disconnected += whenTriggered;
             _pm.Completed += whenTriggered;
 
             WaitHandle.WaitAny(new[] { CancellationTokenSource.Token.WaitHandle, trigger });
 
-            _pm.Disconnected -= whenTriggered;
             _pm.Completed -= whenTriggered;
         }
 

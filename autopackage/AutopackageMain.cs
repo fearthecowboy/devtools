@@ -281,6 +281,7 @@ namespace CoApp.Autopackage {
 
                 var allFiles = parameters.FindFilesSmarter().ToArray();
                 foreach (var file in allFiles) {
+                    FilesystemExtensions.ResetTempFolder();
                     using (var popd = new PushDirectory(Path.GetDirectoryName(file.GetFullPath()))) {
                         Binary.UnloadAndResetAll();
 

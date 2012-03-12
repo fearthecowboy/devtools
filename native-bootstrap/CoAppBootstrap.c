@@ -241,8 +241,6 @@ INT_PTR CALLBACK DialogProc (HWND hwnd,  UINT message, WPARAM wParam,  LPARAM lP
 						InvalidateRect(hwnd, NULL, FALSE );
 						UpdateWindow(StatusDialog);
 
-						
-
 						Cancel();
 					}
 					return TRUE;
@@ -585,7 +583,9 @@ int LaunchSecondStage() {
 	commandLine = Sprintf(L"\"%s\" \"%s\"", secondStage, MsiFile);
 	
 	// launch the second-stage-bootstrapper.
-	CreateProcess( secondStage, commandLine, NULL, NULL, TRUE, 0, NULL, NULL, &StartupInfo, &ProcInfo );
+	CreateProcess( secondStage, commandLine, NULL, NULL, TRUE, CREATE_BREAKAWAY_FROM_JOB, NULL, NULL, &StartupInfo, &ProcInfo );
+
+    // GS01: think about leaving the GUI up for a few more seconds?
 
 	DeleteString(&commandLine);
 	DeleteString(&secondStage);
@@ -593,6 +593,38 @@ int LaunchSecondStage() {
     ExitProcess(0);
     return 0;
 }
+
+/*
+HANDLE RunElevated(const wchar_t* modulePath, const wchar_t* pszCmdLine) {
+	SID_IDENTIFIER_AUTHORITY ntAuth = SECURITY_NT_AUTHORITY;
+    PSID psid = NULL;
+	BOOL isAdmin = FALSE;
+	SHELLEXECUTEINFO sei;
+	
+	wchar_t* newPath;
+	int rc;
+
+	ZeroMemory(&sei, sizeof(SHELLEXECUTEINFO) );
+	// make sure path has a .EXE on the end.
+	DebugPrintf(L"MODULE=%s",modulePath);
+
+	sei.lpFile = modulePath;
+	sei.lpVerb = L"runas";
+	sei.lpParameters = pszCmdLine;
+	sei.hwnd = GetForegroundWindow();
+	sei.nShow = SW_NORMAL;
+	sei.cbSize = sizeof(SHELLEXECUTEINFO);
+		
+	if (!ShellExecuteEx(&sei)) {
+		rc = GetLastError();
+		DebugPrintf(L"FAILURE: %d", rc );
+		TerminateApplicationWithError(IDS_REQUIRES_ADMIN_RIGHTS,L"Administrator rights are required.");
+		return NULL;
+	}
+
+	return sei.hProcess;
+}
+*/
 
 void SetupMonitor();
 
@@ -655,16 +687,36 @@ unsigned __stdcall InstallNetFramework( void* pArguments ){
 		SetupMonitor();
 
 		commandLine = Sprintf(L"\"%s\" /q /norestart /ChainingPackage coappbootstrapper /pipe coappbootstrapper", destinationFilename);
-		// launch the second-stage-bootstrapper.
-		CreateProcess( destinationFilename, commandLine, NULL, NULL, TRUE, 0, NULL, NULL, &StartupInfo, &ProcInfo );
-
-		if( MonitorChainedInstaller(ProcInfo.hProcess) != S_OK ) {
+		
+        // launch the chained installer
+		CreateProcess( destinationFilename, commandLine, NULL, NULL, TRUE, CREATE_BREAKAWAY_FROM_JOB, NULL, NULL, &StartupInfo, &ProcInfo );
+        
+        if( MonitorChainedInstaller(ProcInfo.hProcess) != S_OK ) {
 			// hmm. bailed out of installing .NET
 			if( IsShuttingDown ) {
 				Shutdown();
+                __leave;
 			}
-			TerminateApplicationWithError(IDS_FRAMEWORK_INSTALL_CANCELLED, L"The installation was abnormally cancelled.");
-			__leave;
+            // Try Harder (install without the damn updates. FU Dot Net Installer Maker!
+
+            ZeroMemory(&StartupInfo, sizeof(STARTUPINFO) );
+		    StartupInfo.cb = sizeof( STARTUPINFO );
+		    SetupMonitor();
+
+		    commandLine = Sprintf(L"\"%s\" /q /norestart /SkipMSUInstall /ChainingPackage coappbootstrapper /pipe coappbootstrapper", destinationFilename);
+		
+            // launch the chained installer
+		    CreateProcess( destinationFilename, commandLine, NULL, NULL, TRUE, CREATE_BREAKAWAY_FROM_JOB, NULL, NULL, &StartupInfo, &ProcInfo );
+            
+            if( MonitorChainedInstaller(ProcInfo.hProcess) != S_OK ) {
+                if( IsShuttingDown ) {
+				    Shutdown();
+                    __leave;
+			    }
+
+                TerminateApplicationWithError(IDS_FRAMEWORK_INSTALL_CANCELLED, L"The installation was abnormally cancelled.");
+			    __leave;
+            }
 		}
 
 		// after that's done
@@ -690,6 +742,10 @@ unsigned __stdcall InstallNetFramework( void* pArguments ){
     return 0;
 }
 
+BOOL IsBeforeVista() {
+    return ( GetProcAddress(LoadLibrary(L"Kernel32"), "GetLocaleInfoEx") == NULL );
+}
+
 void ElevateSelf(const wchar_t* pszCmdLine) {
 	SID_IDENTIFIER_AUTHORITY ntAuth = SECURITY_NT_AUTHORITY;
     PSID psid = NULL;
@@ -697,28 +753,33 @@ void ElevateSelf(const wchar_t* pszCmdLine) {
 	SHELLEXECUTEINFO sei;
 	wchar_t modulePath[MAX_PATH];  
 	wchar_t* newPath;
+    wchar_t* newCmdLine;
 	int rc;
 
 	__try {
-		if( AllocateAndInitializeSid(&ntAuth,  2,  SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS,  0, 0, 0, 0, 0, 0, &psid) && CheckTokenMembership(NULL, psid, &isAdmin ) && isAdmin ) {
-			__leave; //Yep, we're an admin
+		if( AllocateAndInitializeSid(&ntAuth,  2,  SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS,  0, 0, 0, 0, 0, 0, &psid) && CheckTokenMembership(NULL, psid, &isAdmin ) && isAdmin /* && ( IsBeforeVista() || wcsstr(pszCmdLine, L"--IsElevated"))*/  ) {
+		    
+            // DebugPrintf(L"Already Elevated Install...");
+            __leave; //Yep, we're an admin
 		}
+
+        //DebugPrintf(L"Elevating...");
 
 		ZeroMemory(&sei, sizeof(SHELLEXECUTEINFO) );
 		GetModuleFileName(NULL, modulePath, MAX_PATH);
 		// make sure path has a .EXE on the end.
 		DebugPrintf(L"MODULE=%s",modulePath);
-		
 
-		newPath = TempFileName(Sprintf(L"%s.exe",GetFilenameFromPath(modulePath)));
+		newPath = TempFileName(Sprintf(L"Installer(%s).exe",GetFilenameFromPath(modulePath)));
 		DebugPrintf(L"NEWPATH=%s",newPath);
 
 		rc = CopyFile(modulePath, newPath, FALSE);
-		DebugPrintf(L"copyfile: %d", rc );
+
+        newCmdLine = Sprintf(L"%s --IsElevated", pszCmdLine );
 
 		sei.lpFile = newPath;
 		sei.lpVerb = L"runas";
-		sei.lpParameters = pszCmdLine;
+		sei.lpParameters = newCmdLine;
 		sei.hwnd = GetForegroundWindow();
 		sei.nShow = SW_NORMAL;
 		sei.cbSize = sizeof(SHELLEXECUTEINFO);
@@ -735,10 +796,16 @@ void ElevateSelf(const wchar_t* pszCmdLine) {
 	}
 }
 
+
+
 int WINAPI wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, wchar_t* pszCmdLine, int nCmdShow) {
 	wchar_t *p;
     INITCOMMONCONTROLSEX iccs;
+    BOOL bIsInJob;
     ApplicationInstance = hInstance;
+    
+    // IsProcessInJob( GetCurrentProcess(), NULL, &bIsInJob );
+    // DebugPrintf(L"Is in job: %hx", bIsInJob);
 
 	// Elevate the process if it is not run as administrator.
 	ElevateSelf(pszCmdLine);
@@ -756,7 +823,6 @@ int WINAPI wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, wchar_t* pszC
 	}
 
 	if( *MsiFile == L'"' ) {
-		// quoted command line. *sigh*.
 		MsiFile++;
 		p = MsiFile;
 		while( *p != 0 && *p != L'"' ) {

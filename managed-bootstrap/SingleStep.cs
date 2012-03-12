@@ -126,14 +126,8 @@ namespace CoApp.Bootstrapper {
         [STAThreadAttribute]
         [LoaderOptimization(LoaderOptimization.MultiDomainHost)]
         public static void Main(string[] args) {
-            var commandline = args.Aggregate(string.Empty, (current, each) => current + " " + each).Trim();
+            var commandline = args.Aggregate(string.Empty, (current, each) => current + " \"" + each+"\"").Trim();
             ElevateSelf(commandline);
-
-            if (Keyboard.Modifiers == ModifierKeys.Shift || Keyboard.Modifiers == ModifierKeys.Control) {
-                Logger.Errors = true;
-                Logger.Messages = true;
-                Logger.Warnings = true;
-            }
 
             Logger.Warning("Startup :" + commandline);
             // Ensure that we are elevated. If the app returns from here, we are.
@@ -141,16 +135,19 @@ namespace CoApp.Bootstrapper {
 
             // get the folder of the bootstrap EXE
             BootstrapFolder = Path.GetDirectoryName(Path.GetFullPath(Assembly.GetExecutingAssembly().Location));
+
             if (!Cancelling) {
                 if (commandline.Length == 0) {
                     MainWindow.Fail(LocalizedMessage.IDS_MISSING_MSI_FILE_ON_COMMANDLINE, "Missing MSI package name on command line!");
-                } else if (!File.Exists(Path.GetFullPath(commandline))) {
+                }
+                else if (!File.Exists(Path.GetFullPath(args[0]))) {
                     MainWindow.Fail(LocalizedMessage.IDS_MSI_FILE_NOT_FOUND, "Specified MSI package name does not exist!");
-                } else if (!ValidFileExists(Path.GetFullPath(commandline))) {
+                }
+                else if (!ValidFileExists(Path.GetFullPath(args[0]))) {
                     MainWindow.Fail(LocalizedMessage.IDS_MSI_FILE_NOT_VALID, "Specified MSI package is not signed with a valid certificate!");
                 } else {
                     // have a valid MSI file. Alrighty!
-                    MsiFilename = Path.GetFullPath(commandline);
+                    MsiFilename = Path.GetFullPath(args[0]);
                     MsiFolder = Path.GetDirectoryName(MsiFilename);
 
                     // if this installer is present, this will exit right after.

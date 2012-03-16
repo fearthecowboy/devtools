@@ -209,13 +209,14 @@ pTK [options] action [buildconfiguration...]
             _cmdexe.Exec(@"/c ""{0}"" {1} & set ", compilerBatchFile, archToSet);
 
             foreach (var x in _cmdexe.StandardOut.Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries)) {
-                if (x.Contains("=")) {
-                    var v = x.Split('=');
-                    Environment.SetEnvironmentVariable(v[0], v[1]);
-                    // Console.WriteLine("Setting ENV: [{0}]=[{1}]", v[0], v[1]);
+                var p = x.IndexOf("=");
+                if( p > 0 ) {
+                    Environment.SetEnvironmentVariable(x.Substring(0, p), x.Substring(p + 1));
                 }
             }
         }
+
+
 
         private void SetSDK(string sdkName, string sdkBatchFile, string arch) {
             using (new ConsoleColors(ConsoleColor.White, ConsoleColor.Black)) {
@@ -239,12 +240,12 @@ pTK [options] action [buildconfiguration...]
 
                 _cmdexe.Exec(@"/c ""{0}"" /{1} & set ", sdkBatchFile, arch == "x86" ? "x86" : "x64");
 
-                foreach (var x in _cmdexe.StandardOut.Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries))
-                    if (x.Contains("=")) {
-                        var v = x.Split('=');
-                        Environment.SetEnvironmentVariable(v[0], v[1]);
-                        // Console.WriteLine("Setting ENV: [{0}]=[{1}]", v[0], v[1]);
+                foreach (var x in _cmdexe.StandardOut.Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries)) {
+                    var p = x.IndexOf("=");
+                    if( p > 0 ) {
+                        Environment.SetEnvironmentVariable(x.Substring(0, p), x.Substring(p + 1));
                     }
+                }
             }
         }
 
@@ -895,6 +896,7 @@ REM ===================================================================
                     if (sets != null) {
                         foreach (var label in sets.Labels) {
                             _originalEnvironment.AddOrSet(label, sets[label].Value);
+                            Environment.SetEnvironmentVariable(label, sets[label].Value); 
                         }
                     }
 
@@ -1133,6 +1135,7 @@ REM ===================================================================
                 if (sets != null) {
                     foreach( var label in sets.Labels ) {
                         _originalEnvironment.AddOrSet(label, sets[label].Value);
+                        Environment.SetEnvironmentVariable(label, sets[label].Value); 
                     }
                 }
 
@@ -1209,6 +1212,7 @@ REM ===================================================================
             if (sets != null) {
                 foreach (var label in sets.Labels) {
                     _originalEnvironment.AddOrSet(label, sets[label].Value);
+                    Environment.SetEnvironmentVariable(label, sets[label].Value); 
                 }
             }
 

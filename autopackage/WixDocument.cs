@@ -12,6 +12,7 @@ namespace CoApp.Autopackage {
     using Developer.Toolkit.Publishing;
     using Toolkit.DynamicXml;
     using Toolkit.Engine.Model.Atom;
+    using Toolkit.Exceptions;
     using Toolkit.Extensions;
 
     internal class WixDocument {
@@ -216,7 +217,10 @@ namespace CoApp.Autopackage {
             if( immediateSubdirectory == null) {
                 immediateSubdirectory = parentDirectory.Add("Directory");
                 // immediateSubdirectory.Attributes.Id = path.MakeSafeDirectoryId() + (subFolderPath.MD5Hash());
-                immediateSubdirectory.Attributes.Id = "dir_"+((path+subFolderPath).MD5Hash());
+                string pid = parentDirectory.Attributes.Id.ToString();
+
+                immediateSubdirectory.Attributes.Id = "dir_" + ((pid + subFolderPath).MD5Hash());
+
                 immediateSubdirectory.Attributes.Name = path;
             }
 
@@ -235,11 +239,16 @@ namespace CoApp.Autopackage {
                 var filesInFolder = Model.DestinationDirectoryFiles.Where(each => Path.GetDirectoryName(each.DestinationPath) == folder).ToArray();
                 var first = true;
 
+                
+
                 foreach( var file in filesInFolder ) {
                     var filename = Path.GetFileName(file.DestinationPath);
                     var newFile = component.Add("File");
                     // newFile.Attributes.Id = filename.MakeSafeDirectoryId() + (folder.MD5Hash());
+                    
+                    // GS01: Autopackage should detect collisions in destination files.
                     newFile.Attributes.Id = "file_"+((filename + folder).MD5Hash());
+                    
                     newFile.Attributes.Name = filename;
                     if (first) {
                         newFile.Attributes.KeyPath = "yes";
@@ -278,10 +287,17 @@ namespace CoApp.Autopackage {
                         File.Copy(file.SourcePath, destPath);
                     }
                 }
-                Tools.ManifestTool.Exec("-manifest {0} -hashupdate -makecdfs", manifestTempFile);
+
+                var rc = Tools.ManifestTool.Exec("-manifest \"{0}\" -hashupdate -makecdfs", manifestTempFile);
+                if( rc != 0 ) {
+                    throw new CoAppException("Unable to create manifest: [mt.exe -manifest \"{0}\" -hashupdate -makecdfs]".format(manifestTempFile));
+                }
 
                 // create the CAT from the CDF
-                Tools.MakeCatalog.Exec("{0}.cdf", manifestTempFile);
+                rc = Tools.MakeCatalog.Exec("\"{0}.cdf\"", manifestTempFile);
+                if (rc != 0) {
+                    throw new CoAppException("Unable to create catalog: [makecat.exe \"{0}.cdf\"]".format(manifestTempFile));
+                }
 
                 // sign the CAT file 
                 var catfile = manifestTempFile.ChangeFileExtensionTo(".cat");

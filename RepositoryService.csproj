@@ -8,8 +8,8 @@
     <ProjectGuid>{45DC497B-D785-4C4B-BC51-3D87CD9B6CBD}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CoApp.RepositoryService</RootNamespace>
-    <AssemblyName>CoApp.RepositoryService</AssemblyName>
+    <RootNamespace>CoApp</RootNamespace>
+    <AssemblyName>RepositoryService</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -38,9 +38,9 @@
     <ApplicationIcon>$(SolutionDir)resources\CoApp.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="coapp.toolkit">
+    <Reference Include="CoApp.Toolkit">
     </Reference>
-    <Reference Include="coapp.toolkit.engine.client">
+    <Reference Include="CoApp.Client">
     </Reference>
     <Reference Include="Microsoft.WindowsAzure.StorageClient, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -59,36 +59,36 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CloudFileSystem.cs" />
-    <Compile Include="CommitMessageHandler.cs" />
-    <Compile Include="HttpListenerResponseExtensions.cs" />
-    <Compile Include="Listener.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
+    <Compile Include="RepositoryService\CloudFileSystem.cs" />
+    <Compile Include="RepositoryService\CommitMessageHandler.cs" />
+    <Compile Include="RepositoryService\HttpListenerResponseExtensions.cs" />
+    <Compile Include="RepositoryService\Listener.cs" />
+    <Compile Include="RepositoryService\Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="RepositoryServiceMain.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RepositoryService\RepositoryServiceMain.cs" />
+    <Compile Include="RepositoryService\Properties\AssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)Source\CoApp.Devtools.AssemblyStrongName.cs" />
-    <Compile Include="RequestHandler.cs" />
-    <Compile Include="UploadedFileHandler.cs" />
-    <Compile Include="Utility.cs" />
+    <Compile Include="RepositoryService\RequestHandler.cs" />
+    <Compile Include="RepositoryService\UploadedFileHandler.cs" />
+    <Compile Include="RepositoryService\Utility.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
+    <None Include="RepositoryService\app.config" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources.resx">
+    <EmbeddedResource Include="RepositoryService\Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Resources\HelpText.txt" />
+    <Content Include="RepositoryService\Resources\HelpText.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\toolkit\developer.toolkit.csproj">
+    <ProjectReference Include="developer.toolkit.csproj">
       <Project>{E1BC4727-C201-44D4-9B73-78D20BD55D5C}</Project>
       <Name>developer.toolkit</Name>
     </ProjectReference>

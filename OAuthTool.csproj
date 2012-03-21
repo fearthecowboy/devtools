@@ -53,11 +53,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="OAuthToolMain.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="OAuthTool\OAuthToolMain.cs" />
+    <Compile Include="OAuthTool\Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\toolkit\developer.toolkit.csproj">
+    <ProjectReference Include="developer.toolkit.csproj">
       <Project>{E1BC4727-C201-44D4-9B73-78D20BD55D5C}</Project>
       <Name>developer.toolkit</Name>
     </ProjectReference>

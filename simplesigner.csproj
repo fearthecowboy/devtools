@@ -8,8 +8,8 @@
     <ProjectGuid>{B2C3433E-931E-4D52-848E-A178B16E954C}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>coapp_simplesigner</RootNamespace>
-    <AssemblyName>simplesigner</AssemblyName>
+    <RootNamespace>CoApp</RootNamespace>
+    <AssemblyName>SimpleSigner</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -48,22 +48,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FileResult.cs" />
-    <Compile Include="SimpleSignerMain.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="simplesigner\FileResult.cs" />
+    <Compile Include="simplesigner\SimpleSignerMain.cs" />
+    <Compile Include="simplesigner\Properties\AssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)Source\CoApp.Devtools.AssemblyStrongName.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(SolutionDir)resources\CoApp.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\toolkit\developer.toolkit.csproj">
+    <ProjectReference Include="developer.toolkit.csproj">
       <Project>{E1BC4727-C201-44D4-9B73-78D20BD55D5C}</Project>
       <Name>developer.toolkit</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup><AssemblySearchPaths>$(SolutionDir)..\coapp\output\any\$(Configuration)\bin;$(SolutionDir)\ext\libraries\;c:\programdata\Reference Assemblies\any;$(AssemblySearchPaths)</AssemblySearchPaths></PropertyGroup>    
+  <PropertyGroup>
+    <AssemblySearchPaths>$(SolutionDir)..\coapp\output\any\$(Configuration)\bin;$(SolutionDir)\ext\libraries\;c:\programdata\Reference Assemblies\any;$(AssemblySearchPaths)</AssemblySearchPaths>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

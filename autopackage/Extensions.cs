@@ -9,6 +9,7 @@ namespace CoApp.Autopackage {
     using System.Xml.Linq;
     using System.Xml.Serialization;
     using Toolkit.Configuration;
+    using Toolkit.Engine.Client;
     using Toolkit.Engine.Model;
     using Toolkit.Extensions;
     using Toolkit.Network;

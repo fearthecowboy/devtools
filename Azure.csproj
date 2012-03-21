@@ -8,7 +8,7 @@
     <ProjectGuid>{442A1739-BCE0-4B51-A615-B75CF3BBC841}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CoApp.Azure</RootNamespace>
+    <RootNamespace>CoApp</RootNamespace>
     <AssemblyName>Azure</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
@@ -49,7 +49,7 @@
     <ApplicationIcon>$(SolutionDir)resources\CoApp.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="coapp.toolkit, Version=1.1.2.1276, Culture=neutral, PublicKeyToken=820d50196d4e8857, processorArchitecture=MSIL">
+    <Reference Include="coapp.toolkit">
       <SpecificVersion>False</SpecificVersion>
     </Reference>
     <Reference Include="Microsoft.WindowsAzure.StorageClient, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -64,12 +64,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AzureMain.cs" />
-    <Compile Include="CloudFileSystem.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Azure\AzureMain.cs" />
+    <Compile Include="Azure\CloudFileSystem.cs" />
+    <Compile Include="Azure\Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
+    <None Include="Azure\app.config" />
     <Content Include="$(SolutionDir)resources\CoApp.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

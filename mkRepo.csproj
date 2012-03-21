@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{2C4DBA1B-1271-499E-B3F5-8F699CD75ADB}</ProjectGuid>
+    <ProjectGuid>{7CD6D627-FD01-4F1E-8F3C-82FB83886CFE}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OAuthTool</RootNamespace>
-    <AssemblyName>OAuthTool</AssemblyName>
+    <RootNamespace>CoApp.mkRepo</RootNamespace>
+    <AssemblyName>mkRepo</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -25,7 +25,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
@@ -40,24 +40,47 @@
   <ItemGroup>
     <Reference Include="coapp.toolkit">
     </Reference>
-    <Reference Include="Newtonsoft.Json">
+    <Reference Include="coapp.toolkit.engine.client">
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="Twitterizer2">
-    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="OAuthToolMain.cs" />
+    <Compile Include="mkRepoMain.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="$(SolutionDir)Source\CoApp.Devtools.AssemblyStrongName.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <SubType>Designer</SubType>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\HelpText.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\toolkit\developer.toolkit.csproj">
+      <Project>{E1BC4727-C201-44D4-9B73-78D20BD55D5C}</Project>
+      <Name>developer.toolkit</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup><AssemblySearchPaths>$(SolutionDir)..\coapp\output\any\$(Configuration)\bin;$(SolutionDir)\ext\libraries\;c:\programdata\Reference Assemblies\any;$(AssemblySearchPaths)</AssemblySearchPaths></PropertyGroup>  
+  <PropertyGroup>
+    <AssemblySearchPaths>$(SolutionDir)..\coapp\output\any\$(Configuration)\bin;$(SolutionDir)\ext\libraries\;c:\programdata\Reference Assemblies\any;$(AssemblySearchPaths)</AssemblySearchPaths>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

@@ -1,0 +1,8 @@
+﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=614CF1954588114DB7AD8D3A30753429/AbsolutePath/@EntryValue">C:\root\Mesh\coapp\devtools\devtools.resharper.dotsettings</s:String>
+	<s:String x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=614CF1954588114DB7AD8D3A30753429/RelativePath/@EntryValue">..\devtools.resharper.dotsettings</s:String>
+	<s:Boolean x:Key="/Default/Environment/InjectedLayers/FileInjectedLayer/=614CF1954588114DB7AD8D3A30753429/@KeyIndexDefined">True</s:Boolean>
+	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AC_003A_005Croot_005CMesh_005Ccoapp_005Cdevtools_005Cdevtools_002Eresharper_002Edotsettings/@KeyIndexDefined">True</s:Boolean>
+	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AC_003A_005Croot_005CMesh_005Ccoapp_005Cdevtools_005Cdevtools_002Eresharper_002Edotsettings/RelativePriority/@EntryValue">1</s:Double>
+	<s:Boolean x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AD_003A_005Croot_005CMesh_005Ccoapp_005Cdevtools_005Cdevtools_002Eresharper_002Edotsettings/@KeyIndexDefined">True</s:Boolean>
+	<s:Double x:Key="/Default/Environment/InjectedLayers/InjectedLayerCustomization/=File_003A_003AD_003A_005Croot_005CMesh_005Ccoapp_005Cdevtools_005Cdevtools_002Eresharper_002Edotsettings/RelativePriority/@EntryValue">2</s:Double></wpf:ResourceDictionary>

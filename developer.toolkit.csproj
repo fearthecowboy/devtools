@@ -46,7 +46,25 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collections\EasyDictionary.cs" />
+    <Compile Include="Collections\LazyEnumerable.cs" />
+    <Compile Include="Collections\NullableCollectionDictionary.cs" />
+    <Compile Include="Collections\VirtualEnumerator.cs" />
+    <Compile Include="DynamicXml\DynamicAttributes.cs" />
+    <Compile Include="DynamicXml\DynamicCode.cs" />
+    <Compile Include="DynamicXml\DynamicDataRow.cs" />
+    <Compile Include="DynamicXml\DynamicDataSet.cs" />
+    <Compile Include="DynamicXml\DynamicDataTable.cs" />
+    <Compile Include="DynamicXml\DynamicNode.cs" />
+    <Compile Include="Exceptions\EndUserException.cs" />
+    <Compile Include="Exceptions\EndUserParseException.cs" />
+    <Compile Include="Exceptions\EndUserPropertyException.cs" />
+    <Compile Include="Exceptions\EndUserRuleException.cs" />
     <Compile Include="Exceptions\FailedTimestampException.cs" />
+    <Compile Include="Exceptions\MalformedCsvException.cs" />
+    <Compile Include="Exceptions\MissingFieldCsvException.cs" />
+    <Compile Include="Network\Ftp.cs" />
+    <Compile Include="Network\HttpServer.cs" />
     <Compile Include="PortableExecutable\PEAnalyzer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="$(SolutionDir)Source\CoApp.Devtools.AssemblyStrongName.cs" />
@@ -108,7 +126,48 @@
     <Compile Include="ResourceLib\VarFileInfo.cs" />
     <Compile Include="ResourceLib\VarTable.cs" />
     <Compile Include="ResourceLib\VersionResource.cs" />
+    <Compile Include="Scan\ProjectScanner.cs" />
+    <Compile Include="Scan\Types\ScannedDefine.cs" />
+    <Compile Include="Scan\Types\ScannedFile.cs" />
+    <Compile Include="Scan\Types\ScannedFileType.cs" />
+    <Compile Include="Scan\Types\ScanReport.cs" />
+    <Compile Include="Scripting\Languages\CSharp\CSharpTokenizer.cs" />
+    <Compile Include="Scripting\Languages\CSV\CachedCsvReader.cs" />
+    <Compile Include="Scripting\Languages\CSV\CachedCsvReader.CsvBindingList.cs" />
+    <Compile Include="Scripting\Languages\CSV\CachedCsvReader.CsvPropertyDescriptor.cs" />
+    <Compile Include="Scripting\Languages\CSV\CachedCsvReader.CsvRecordComparer.cs" />
+    <Compile Include="Scripting\Languages\CSV\CsvReader.cs" />
+    <Compile Include="Scripting\Languages\CSV\CsvReader.DataReaderValidations.cs" />
+    <Compile Include="Scripting\Languages\CSV\CsvReader.RecordEnumerator.cs" />
+    <Compile Include="Scripting\Languages\CSV\Events\ParseErrorEventArgs.cs" />
+    <Compile Include="Scripting\Languages\CSV\MissingFieldAction.cs" />
+    <Compile Include="Scripting\Languages\CSV\ParseErrorAction.cs" />
+    <Compile Include="Scripting\Languages\CSV\Resources\ExceptionMessage.Designer.cs" />
+    <Compile Include="Scripting\Languages\CSV\ValueTrimmingOptions.cs" />
+    <Compile Include="Scripting\Languages\GSharp\GSharpProcessor.cs" />
+    <Compile Include="Scripting\Languages\GSharp\GSharpTokenizer.cs" />
+    <Compile Include="Scripting\Languages\PropertySheet\Indexer.cs" />
+    <Compile Include="Scripting\Languages\PropertySheet\PropertySheet.cs" />
+    <Compile Include="Scripting\Languages\PropertySheet\PropertySheetItem.cs" />
+    <Compile Include="Scripting\Languages\PropertySheet\PropertySheetParser.cs" />
+    <Compile Include="Scripting\Languages\PropertySheet\PropertySheetTokenizer.cs" />
+    <Compile Include="Scripting\Languages\PropertySheet\Rule.cs" />
+    <Compile Include="Scripting\Languages\PropertySheet\RuleProperty.cs" />
+    <Compile Include="Scripting\Utility\ActiveScriptHost.cs" />
+    <Compile Include="Scripting\Utility\Token.cs" />
+    <Compile Include="Scripting\Utility\Tokenizer.cs" />
+    <Compile Include="Scripting\Utility\TokenType.cs" />
+    <Compile Include="Sgml\SgmlParser.cs" />
+    <Compile Include="Sgml\SgmlReader.cs" />
     <Compile Include="Tools\SDK.cs" />
+    <Compile Include="Utility\DependencyInformation.cs" />
+    <Compile Include="Utility\DirectedGraph.cs" />
+    <Compile Include="Utility\ExecutableInfo.cs" />
+    <Compile Include="Utility\PathEqualityComparer.cs" />
+    <Compile Include="Utility\ProcessUtility.cs" />
+    <Compile Include="Utility\ProgramFinder.cs" />
+    <Compile Include="Utility\ToolSniffer.cs" />
+    <Compile Include="Win32\PEInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(SolutionDir)resources\CoApp.ico" />
@@ -120,7 +179,12 @@
       <Name>CoApp.CCI</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="Scripting\Languages\CSV\Resources\ExceptionMessage.resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Scripting\Languages\CSV\Exceptions\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <AssemblySearchPaths>$(SolutionDir)..\coapp\output\any\$(Configuration)\bin;$(SolutionDir)\ext\libraries\;c:\programdata\Reference Assemblies\any;$(AssemblySearchPaths)</AssemblySearchPaths>

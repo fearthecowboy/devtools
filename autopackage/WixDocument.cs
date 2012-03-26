@@ -310,7 +310,7 @@ namespace CoApp.Autopackage {
                 // add manifest to wix document 
                 var component = AddNewComponent(ProductDir, true);
                 var newFile = component.Add("File");
-                var assemblyManifestId = manifestFilename.MakeSafeDirectoryId();
+                var assemblyManifestId = "X" + manifestFilename.MakeSafeDirectoryId().MD5Hash();
                 newFile.Attributes.Id = assemblyManifestId;
                 newFile.Attributes.Name = manifestFilename;
                 newFile.Attributes.Source = Path.GetFileName(manifestTempFile);
@@ -325,7 +325,7 @@ namespace CoApp.Autopackage {
 
                 // add the catalog to the WIX document
                 newFile = component.Add("File");
-                newFile.Attributes.Id = catFilename.MakeSafeDirectoryId();
+                newFile.Attributes.Id = "X" + catFilename.MakeSafeDirectoryId().MD5Hash();
                 newFile.Attributes.Name = catFilename;
                 newFile.Attributes.Source = Path.GetFileName(catfile);
                 newFile.Attributes.DiskId = "1";
@@ -343,7 +343,7 @@ namespace CoApp.Autopackage {
                     //}
 
                     newFile = component.Add("File");
-                    newFile.Attributes.Id = filename.MakeSafeDirectoryId();
+                    newFile.Attributes.Id = "X" + filename.MakeSafeDirectoryId().MD5Hash();
                     newFile.Attributes.Name = filename;
                     newFile.Attributes.DiskId = "1";
                     newFile.Attributes.Source = file.SourcePath;
@@ -375,7 +375,7 @@ namespace CoApp.Autopackage {
                 foreach (var file in managedAssembly.SourceFiles) {
                     var filename = Path.GetFileName(file);
                     var newFile = component.Add("File");
-                    newFile.Attributes.Id = filename.MakeSafeDirectoryId();
+                    newFile.Attributes.Id = "X"+filename.MakeSafeDirectoryId().MD5Hash();
                     newFile.Attributes.Name = filename;
                     if (first) {
                         newFile.Attributes.KeyPath = "yes";

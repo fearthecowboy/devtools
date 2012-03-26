@@ -231,7 +231,7 @@ namespace CoApp.Bootstrapper {
         internal static bool IsCoAppInstalled {
             get {
                 try {
-                    AssemblyCache.QueryAssemblyInfo("CoApp.Toolkit.Engine.Client");
+                    AssemblyCache.QueryAssemblyInfo("CoApp.Client");
                     return true;
                 } catch { }
                 return false;
@@ -284,7 +284,7 @@ namespace CoApp.Bootstrapper {
             IComparable prep = null;
 
 #if DEBUG_X
-            var localAssembly = AcquireFile("CoApp.Toolkit.Engine.Client.dll");
+            var localAssembly = AcquireFile("CoApp.Client.dll");
             Logger.Message("Local Assembly: " + localAssembly);
             if (!string.IsNullOrEmpty(localAssembly)) {
                 // use the one found locally.
@@ -298,7 +298,7 @@ namespace CoApp.Bootstrapper {
             // if we didn't create one with the local assembly (debug)
             if (prep == null) {
                 prep =
-                    appDomain.CreateInstanceAndUnwrap("CoApp.Toolkit.Engine.Client, Version=1.0.0.0, Culture=neutral, PublicKeyToken=1e373a58e25250cb",
+                    appDomain.CreateInstanceAndUnwrap("CoApp.Client, Version=1.0.0.0, Culture=neutral, PublicKeyToken=1e373a58e25250cb",
                         "CoApp.Toolkit.Engine.Client.InstallerPrep", false, BindingFlags.Default, null, null, null, null) as IComparable;
             }
 
@@ -345,7 +345,7 @@ namespace CoApp.Bootstrapper {
             // of course, this has all got to happen on the original thread. *sigh*
             Logger.Message("Got to Installer Stage Two");
 #if DEBUG_X
-            var localAssembly = AcquireFile("CoApp.Toolkit.Engine.Client.dll");
+            var localAssembly = AcquireFile("CoApp.Client.dll");
             Logger.Message("Local Assembly: " + localAssembly);
 
             if (!string.IsNullOrEmpty(localAssembly)) {
@@ -357,7 +357,7 @@ namespace CoApp.Bootstrapper {
             }
 #endif 
             // meh. use strong named assembly
-            appDomain.CreateInstanceAndUnwrap( "CoApp.Toolkit.Engine.Client, Version=1.0.0.0, Culture=neutral, PublicKeyToken=1e373a58e25250cb",
+            appDomain.CreateInstanceAndUnwrap( "CoApp.Client, Version=1.0.0.0, Culture=neutral, PublicKeyToken=1e373a58e25250cb",
                 "CoApp.Toolkit.Engine.Client.Installer", false, BindingFlags.Default, null, new[] { MsiFilename }, null, null);
 
             // since we've done everything we need to do, we're out of here. Right Now.

@@ -187,7 +187,7 @@ namespace CoApp.mkRepo {
             Logger.Message("Selecting local packages");
             var files = _packages.FindFilesSmarter();
 
-            _pm.GetPackages(files, null, null, false, null, null, null, null, false, null, null, _messages).ContinueWith((antecedent) => {
+            _pm.GetPackages(files, dependencies:false, latest:false, messages:_messages).ContinueWith((antecedent) => {
                 var packages = antecedent.Result;
 
                 foreach (var pkg in packages) {

@@ -552,7 +552,7 @@ pTK [options] action [buildconfiguration...]
 
             // source control is mandatory! create a repository for this package
             if (!(_useGit || _useHg)) {
-                return Fail("Source must be checked out using git or hg-git.");
+                Console.WriteLine("WARNING: Source should be checked out using git or hg-git.");
             }
 
             // find git in the file system

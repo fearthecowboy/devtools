@@ -7,7 +7,7 @@ package {
 }
 
 // requires {
-    //  should be implict now: package: "coapp.toolkit-1.1.*";
+    //  should be implict now: package: "coapp.toolkit-1.2.*";
 // }
 
 provides {
@@ -26,7 +26,7 @@ metadata {
 - simplesigner.exe : Makes Digital Signing and Strong naming binaries trivial"; 
     icon: @"images\logo3.png";
     
-    author-version : "1.0 Beta3";
+    author-version : "1.2 PRE-RC";
     bug-tracker: "https://github.com/organizations/coapp/dashboard/issues";
     stability : "-100";
 }
@@ -37,6 +37,7 @@ compatability-policy {
     versions : {
         "1.0",
         "1.1",
+        "1.2",
     }; // if not specified, find the versions by looking at the feeds and finding all the major/minor versions in range.
 }
 

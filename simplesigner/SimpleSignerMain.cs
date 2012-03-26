@@ -9,17 +9,13 @@
 //-----------------------------------------------------------------------
 
 
-namespace coapp_simplesigner {
+namespace CoApp.simplesigner {
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Security.Cryptography;
-    using System.Threading;
     using System.Threading.Tasks;
-    using CoApp.Developer.Toolkit.Exceptions;
     using CoApp.Developer.Toolkit.Publishing;
-    using CoApp.Toolkit.Exceptions;
     using CoApp.Toolkit.Extensions;
     using CoApp.Toolkit.Win32;
 
@@ -107,7 +103,6 @@ Manifest Options:
         private bool _strongname;
         private bool _verbose;
         private bool _verify;
-        private bool _auto;
 
         private string _signingCertPath = string.Empty;
         private string _signingCertPassword;
@@ -160,7 +155,6 @@ Manifest Options:
                         break;
 
                     case "auto":
-                        _auto = true;
                         break;
 
                     case "sign":

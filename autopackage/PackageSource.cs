@@ -87,7 +87,7 @@ namespace CoApp.Autopackage {
         internal Dictionary<string, string> MacroValues = new Dictionary<string, string>();
 
         internal string PostprocessValue( string value ) {
-            if( string.IsNullOrEmpty(value) && value.Contains("[]")) {
+            if( !string.IsNullOrEmpty(value) && value.Contains("[]")) {
                 return value.Replace("[]", "");
             }
             return value;
@@ -121,7 +121,7 @@ namespace CoApp.Autopackage {
                 }
             }
 
-            return DefineRules.GetPropertyValue(valuename) ?? (MacroValues.ContainsKey(valuename) ? MacroValues[valuename] : Environment.GetEnvironmentVariable(valuename)) ?? defaultValue;
+            return DefineRules.GetPropertyValue(valuename) ?? (MacroValues.ContainsKey(valuename.ToLower()) ? MacroValues[valuename.ToLower()] : Environment.GetEnvironmentVariable(valuename)) ?? defaultValue;
         }
 
         internal IEnumerable<object> GetFileCollection(string collectionname) {

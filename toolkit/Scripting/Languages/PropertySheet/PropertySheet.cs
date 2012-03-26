@@ -97,7 +97,12 @@ namespace CoApp.Toolkit.Scripting.Languages.PropertySheet {
 
         private string ProcessMacroInternal(string value, object eachItem) {
             bool keepGoing;
+            if (value == null) {
+                return null;
+            }
+
             do {
+                
                 keepGoing = false;
 
                 var matches = Macro.Matches(value);

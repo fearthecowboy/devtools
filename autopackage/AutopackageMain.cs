@@ -405,9 +405,9 @@ namespace CoApp.Autopackage {
 
         private void CreatePackageFile() {
             var msiFile = Path.Combine(Environment.CurrentDirectory, "{0}-{1}-{2}.msi".format(PackageModel.Name, (string)PackageModel.Version, PackageModel.Architecture.ToString()));
-            PackageSource.MacroValues.Add("OutputFilename", Path.GetFileName(msiFile));
-            PackageSource.MacroValues.Add("Name", Path.GetFileNameWithoutExtension(msiFile));
-            PackageSource.MacroValues.Add("CanonicalName", Path.GetFileNameWithoutExtension(PackageModel.CanonicalName));
+            PackageSource.MacroValues.Add("outputfilename", Path.GetFileName(msiFile));
+            PackageSource.MacroValues.Add("name", Path.GetFileNameWithoutExtension(msiFile));
+            PackageSource.MacroValues.Add("canonicalname", Path.GetFileNameWithoutExtension(PackageModel.CanonicalName));
 
             var wixDocument = new WixDocument(PackageSource, PackageModel, PackageFeed);
             wixDocument.FillInTemplate();

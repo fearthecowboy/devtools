@@ -87,7 +87,6 @@ sign {
 
 export {
     set : release_dir = @"output\any\Release\bin\";
-    set : binaries_dir = @"..\binaries\";
     set : tools_dir = @"..\tools\";
     
     default: false;
@@ -96,7 +95,7 @@ export {
     };
     
     build-command: @"
-        REM copy binaries into ..\binaries folder (this should be the one that is committed back when exported)
+        REM copy tools into ..\tools folder (this should be the one that is committed back when exported)
         xcopy /Q /D /Y  ""${release_dir}autopackage.exe""  ""${tools_dir}"" || goto failed
         xcopy /Q /D /Y  ""${release_dir}Azure.exe""  ""${tools_dir}"" || goto failed
         xcopy /Q /D /Y  ""${release_dir}CoApp.RepositoryService.exe""  ""${tools_dir}"" || goto failed
@@ -130,7 +129,7 @@ anycpu {
         @"output\any\${cfg}\bin\native-bootstrap.exe",
         @"output\any\${cfg}\bin\autopackage.exe",
         @"output\any\${cfg}\bin\Azure.exe",
-        @"output\any\${cfg}\bin\CoApp.RepositoryService.exe",
+        @"output\any\${cfg}\bin\RepositoryService.exe",
         @"output\any\${cfg}\bin\mkRepo.exe",
         @"output\any\${cfg}\bin\pTk.exe",
         @"output\any\${cfg}\bin\QuickTool.exe",
@@ -142,8 +141,14 @@ anycpu {
     };
 
     build-command: @"
+        
         REM build the native-bootstrapper first
         msbuild  /p:Configuration=${cfg} ""/p:Platform=win32"" /p:SolutionDir=..\ native-bootstrap\bootstrap.vcxproj  || goto failed
+        xcopy /d /y output\any\${cfg}\bin\native-bootstrap.exe binaries\
+        
+        REM then build the managed-bootstrapper 
+        msbuild  /p:Configuration=${cfg} /p:Platform=ANYCPU /p:SolutionDir=.\ managed-bootstrap.csproj  || goto failed
+        xcopy /d /y output\any\${cfg}\bin\managed-bootstrap.exe binaries\
         
         REM then everything else
         msbuild  /p:Configuration=${cfg} ""/p:Platform=Any CPU"" devtools.sln || goto failed
@@ -154,7 +159,7 @@ clean {
     default: no;
 
     clean-command: @"
-        rmdir /s /q output intermediate  > nul 2>&1
+        rmdir /s /q output intermediate bin obj > nul 2>&1
         for /d %%v in (*) do if exist %%v\obj rmdir /s /q %%v\obj        
         for /d %%v in (*) do if exist %%v\bin rmdir /s /q %%v\bin
     ";

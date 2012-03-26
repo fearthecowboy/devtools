@@ -101,7 +101,8 @@ namespace CoApp.Toolkit.DynamicXml {
                 }
                 var value = p[p.Length - 1] ;
 
-                var match = _element.Descendants().Where(each => each.Attributes().Where(a => a.Name == attr && a.Value == value).Any()).FirstOrDefault();
+                // var match = _element.Descendants().Where(each => each.Attributes().Where(a => a.Name == attr && a.Value == value).Any()).FirstOrDefault();
+                var match = _element.Elements().Where(each => each.Attributes().Where(a => a.Name == attr && a.Value == value).Any()).FirstOrDefault();
 
                 return match == null ? null : new DynamicNode(match);
             }

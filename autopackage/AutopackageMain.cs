@@ -190,7 +190,7 @@ namespace CoApp.Autopackage {
                                     "Downloading {0}".format(itemUri.AbsoluteUri).PrintProgressBar(percent);
                                 },
                             }, _messages),
-                OperationCancelled = CancellationRequested,
+                OperationCanceled = CancellationRequested,
                 PackageSatisfiedBy = (original, satisfiedBy) => {
                     original.SatisfiedBy = satisfiedBy;
                 },

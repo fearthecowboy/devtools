@@ -529,7 +529,7 @@ pTK [options] action [buildconfiguration...]
                         Console.WriteLine();
                     }
                 }, _messages),
-                OperationCancelled = CancellationRequested,
+                OperationCanceled = CancellationRequested,
                 PackageSatisfiedBy = (original, satisfiedBy) => {
                     original.SatisfiedBy = satisfiedBy;
                 },

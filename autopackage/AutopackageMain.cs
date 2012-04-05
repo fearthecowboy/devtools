@@ -106,7 +106,7 @@ namespace CoApp.Autopackage {
         private readonly List<string> _warnings = new List<string>();
         private readonly List<string> _msgs = new List<string>();
 
-        internal static PackageManagerMessages _messages;
+        internal static EasyPackageManager _easyPackageManager = new EasyPackageManager();
         
         // command line stuff
         
@@ -177,26 +177,7 @@ namespace CoApp.Autopackage {
         /// </returns>
         protected override int Main(IEnumerable<string> args) {
             // force temporary folder to be where we want it to be.
-            _messages = new PackageManagerMessages {
-                UnexpectedFailure = UnexpectedFailure,
-                NoPackagesFound = NoPackagesFound,
-                PermissionRequired = OperationRequiresPermission,
-                Error = MessageArgumentError,
-                RequireRemoteFile =
-                    (canonicalName, remoteLocations, localFolder, force) =>
-                        Downloader.GetRemoteFile(
-                            canonicalName, remoteLocations, localFolder, force, new RemoteFileMessages {
-                                Progress = (itemUri, percent) => {
-                                    "Downloading {0}".format(itemUri.AbsoluteUri).PrintProgressBar(percent);
-                                },
-                            }, _messages),
-                OperationCanceled = CancellationRequested,
-                PackageSatisfiedBy = (original, satisfiedBy) => {
-                    original.SatisfiedBy = satisfiedBy;
-                },
-                PackageBlocked = BlockedPackage,
-                UnknownPackage = UnknownPackage,
-            };
+          
 
             var macrovals = new Dictionary<string, string>();
 
@@ -422,7 +403,7 @@ namespace CoApp.Autopackage {
             // recognize the new package in case it is needed for another package.
             if (!string.IsNullOrEmpty(msiFile) && File.Exists(msiFile)) {
                 // Console.WriteLine("\r\n Recognizing: {0}", msiFile);
-                PackageManager.Instance.RecognizeFile(null, msiFile, null, _messages).Wait();
+                PackageManager.Instance.RecognizeFile(null, msiFile, null, null).Wait();
             }
 
         }

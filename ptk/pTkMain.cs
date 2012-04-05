@@ -75,11 +75,7 @@ pTK [options] action [buildconfiguration...]
 //                                build data 
 
 
-
-        private readonly PackageManager _pm = PackageManager.Instance;
-        private PackageManagerMessages _messages;
-
-
+        private EasyPackageManager _easy = new EasyPackageManager();
 
 
         /// <summary>
@@ -515,28 +511,7 @@ pTK [options] action [buildconfiguration...]
             #endregion
 
             // connect to coapp service
-
-            _messages = new PackageManagerMessages {
-                UnexpectedFailure = UnexpectedFailure,
-                NoPackagesFound = NoPackagesFound,
-                PermissionRequired = OperationRequiresPermission,
-                Error = MessageArgumentError,
-                RequireRemoteFile = (canonicalName, remoteLocations, localFolder, force) => Downloader.GetRemoteFile(canonicalName, remoteLocations, localFolder, force, new RemoteFileMessages {
-                    Progress = (itemUri, percent) => {
-                        "Downloading {0}".format(itemUri.AbsoluteUri).PrintProgressBar(percent);
-                    },
-                    Completed = (itemUri) => {
-                        Console.WriteLine();
-                    }
-                }, _messages),
-                OperationCanceled = CancellationRequested,
-                PackageSatisfiedBy = (original, satisfiedBy) => {
-                    original.SatisfiedBy = satisfiedBy;
-                },
-                PackageBlocked = BlockedPackage,
-                UnknownPackage = UnknownPackage,
-            };
-
+            
             // set up several tools we need
             _cmdexe = new ProcessUtility("cmd.exe");
             //var f = new ProgramFinder("").ScanForFile("trace.exe");
@@ -1145,33 +1120,14 @@ REM ===================================================================
                 // install required packages...
                 var requires = build["requires"];
                 if( requires != null ) {
-                    if( !_pm.IsConnected ) {
-                        _pm.ConnectAndWait("coapp-cli-client", null, 5000);
-                    }
                     foreach( var pkg in requires.Values ) {
                         Console.WriteLine("Looking for {0}", pkg);
-                        var installedPkgs = _pm.GetPackages(pkg, installed:true,messages:_messages).Result;
+                        var installedPkgs = _easy.GetPackages(pkg, installed:true).Result;
                         if( !installedPkgs.Any()) {
                             // there isn't a matching installed package, we'd better install one.
-                            var pkgToInstall = _pm.GetPackages(pkg, installed: false, latest:true,messages:_messages).Result;
+                            var pkgToInstall = _easy.GetPackages(pkg, installed: false, latest: true).Result;
                             bool failed = false;
-                            _pm.InstallPackage(pkgToInstall.First().CanonicalName, autoUpgrade: true, messages: new PackageManagerMessages {
-                                InstallingPackageProgress = (canonicalName, progress, overallProgress) => {
-                                    // installation progress
-                                    ConsoleExtensions.PrintProgressBar("Installing: {0}".format(canonicalName), progress);
-                                },
-
-                                InstalledPackage = (canonicalName) => {
-                                    // completed install of package 
-                                    Console.WriteLine();
-                                },
-
-                                FailedPackageInstall = (canonicalName, filename, reason) => {
-                                    // failed install of package 
-                                    Fail("Unable to install '{0}' -- {1}", canonicalName, reason);
-                                    failed = true;
-                                },
-                            }.Extend(_messages)).Wait();
+                            _easy.InstallPackage(pkgToInstall.First().CanonicalName, autoUpgrade: true).Wait();
 
                             if( failed ) {
                                 throw new ConsoleException("Unable to install dependent package.");
@@ -1179,7 +1135,6 @@ REM ===================================================================
                         }
                     }
                 }
-
 
                 SetCompilerSdkAndPlatform(build);
 

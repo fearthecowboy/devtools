@@ -309,10 +309,10 @@ namespace CoApp.Autopackage {
 
             if( !Name.Equals("coapp.toolkit", StringComparison.CurrentCultureIgnoreCase) ) {
                 // don't auto-add the coapp.toolkit dependency for the toolkit itself.
-                var toolkitPackage = Source.PackageManager.GetPackages("coapp.toolkit-*-any-1e373a58e25250cb", null, null, null, null, null, null, null, null, null, false, messages:AutopackageMain._messages).Result.OrderByDescending(each => each.Version).FirstOrDefault();
+                var toolkitPackage = AutopackageMain._easyPackageManager.GetPackages("coapp.toolkit-*-any-1e373a58e25250cb", null, null, null, null, null, null, null, null, null, false).Result.OrderByDescending(each => each.Version).FirstOrDefault();
                 
                 if( toolkitPackage != null ) {
-                    Source.PackageManager.GetPackageDetails(toolkitPackage.CanonicalName, AutopackageMain._messages).Wait();
+                    AutopackageMain._easyPackageManager.GetPackageDetails(toolkitPackage.CanonicalName).Wait();
                     Console.WriteLine("Implict Package Dependency: {0} -> {1}", toolkitPackage.CanonicalName, toolkitPackage.ProductCode);
                     DependentPackages.Add(toolkitPackage);    
                 }
@@ -322,7 +322,7 @@ namespace CoApp.Autopackage {
                 // for now, lets just see if we can do a package match, and grab just that packages
                 // in the future, we should figure out how to make better decisions for this.
                 try {
-                    var packages = Source.PackageManager.GetPackages(pkgName, null, null, null, null, null, null, null, false, null, false, messages:AutopackageMain._messages).Result.ToArray();
+                    var packages = AutopackageMain._easyPackageManager.GetPackages(pkgName, null, null, null, null, null, null, null, false, null, false).Result.ToArray();
 
                     if( packages.IsNullOrEmpty()) {
                         AutopackageMessages.Invoke.Error( MessageCode.FailedToFindRequiredPackage, null, "Failed to find package '{0}'.", pkgName);
@@ -337,7 +337,7 @@ namespace CoApp.Autopackage {
 
                     Console.WriteLine("Package Dependency: {0} -> {1}", pkg.CanonicalName, pkg.ProductCode);
 
-                    Source.PackageManager.GetPackageDetails(pkg.CanonicalName,AutopackageMain._messages).Wait();
+                    AutopackageMain._easyPackageManager.GetPackageDetails(pkg.CanonicalName).Wait();
 
                     DependentPackages.Add(pkg);
                     

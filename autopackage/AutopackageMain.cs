@@ -56,6 +56,8 @@ namespace CoApp.Autopackage {
         UnknownCompositionRuleType,
         MultiplePackagesMatched,
         ManifestReferenceNotFound,
+        AssemblyVersionDoesNotMatch,
+        AssembliesMustBeSigned,
 
         // warnings
         WarningUnknown = 500,
@@ -177,7 +179,8 @@ namespace CoApp.Autopackage {
         /// </returns>
         protected override int Main(IEnumerable<string> args) {
             // force temporary folder to be where we want it to be.
-          
+
+            _easyPackageManager.AddSessionFeed(Environment.CurrentDirectory).Wait();
 
             var macrovals = new Dictionary<string, string>();
 

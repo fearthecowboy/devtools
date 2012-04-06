@@ -408,6 +408,8 @@ pTK [options] action [buildconfiguration...]
             }
         }
 
+        private string[] sessionFeeds;
+
         /// <summary>
         /// This is the main procedure
         /// </summary>
@@ -433,7 +435,7 @@ pTK [options] action [buildconfiguration...]
   //                  _traceexe.Kill();
     //            }
             };
-
+            
 
             #region Parse Options
 
@@ -502,6 +504,10 @@ pTK [options] action [buildconfiguration...]
 
             // make sure that we're in the parent directory of the .buildinfo file.
             Environment.CurrentDirectory = Path.GetDirectoryName(Path.GetDirectoryName(buildinfo));
+
+            sessionFeeds = new[] {Environment.CurrentDirectory, Path.GetDirectoryName(buildinfo)};
+
+
 
             // tell the user what we are
             Logo();
@@ -1125,6 +1131,11 @@ REM ===================================================================
                         var installedPkgs = _easy.GetPackages(pkg, installed:true).Result;
                         if( !installedPkgs.Any()) {
                             // there isn't a matching installed package, we'd better install one.
+                            // refresh the feeds, as a package dependency might have recently been built...
+                            foreach( var feed in sessionFeeds) {
+                                _easy.AddSessionFeed(feed);
+                            }
+
                             var pkgToInstall = _easy.GetPackages(pkg, installed: false, latest: true).Result;
                             bool failed = false;
                             _easy.InstallPackage(pkgToInstall.First().CanonicalName, autoUpgrade: true).Wait();

@@ -323,7 +323,7 @@ namespace CoApp.Autopackage {
                 // for now, lets just see if we can do a package match, and grab just that packages
                 // in the future, we should figure out how to make better decisions for this.
                 try {
-                    var packages = AutopackageMain._easyPackageManager.GetPackages(pkgName, null, null, null, null, null, null, null, false, null, false).Result.ToArray();
+                    var packages = AutopackageMain._easyPackageManager.GetPackages(pkgName, null, null, null, null, null, null, null, false, null, false).Result.OrderByDescending( each => each.Version).ToArray();
 
                     if( packages.IsNullOrEmpty()) {
                         AutopackageMessages.Invoke.Error( MessageCode.FailedToFindRequiredPackage, null, "Failed to find package '{0}'.", pkgName);

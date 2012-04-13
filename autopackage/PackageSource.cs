@@ -101,7 +101,7 @@ namespace CoApp.Autopackage {
 
         internal string GetMacroValue(string valuename) {
             if( valuename == "DEFAULTLAMBDAVALUE") {
-                return "${each.Path}";
+                return "${packagedir}\\${each.Path}";
             }
 
             string defaultValue = null;

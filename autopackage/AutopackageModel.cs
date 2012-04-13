@@ -96,7 +96,21 @@ namespace CoApp.Autopackage {
 
         internal AutopackageModel(PackageSource source, AtomFeed feed) : this() {
             Source = source;
+            foreach( var sheet in Source.PropertySheets ) {
+                sheet.GetMacroValue += GetMacroValue;
+            }
             AtomFeed = feed;
+        }
+        internal string GetMacroValue(string macroKey) {
+            if (macroKey.StartsWith("Package.")) {
+                var result = this.SimpleEval(macroKey.Substring(8));
+                if (result == null || string.Empty == result.ToString()) {
+                    return null;
+                }
+
+                return result.ToString();
+            }
+            return null;
         }
 
         internal void ProcessCertificateInformation() {

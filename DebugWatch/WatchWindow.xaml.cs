@@ -36,7 +36,6 @@ namespace DebugWatch {
 
         private void MenuItem_Click(object sender, RoutedEventArgs e) {
             DebugMessages.Clear();
-
         }
     }
 }

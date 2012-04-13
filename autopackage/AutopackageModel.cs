@@ -96,22 +96,7 @@ namespace CoApp.Autopackage {
 
         internal AutopackageModel(PackageSource source, AtomFeed feed) : this() {
             Source = source;
-            foreach( var sheet in Source.PropertySheets ) {
-                sheet.GetMacroValue += GetMacroValue;
-            }
             AtomFeed = feed;
-        }
-
-        internal string GetMacroValue( string macroKey ) {
-            if( macroKey.StartsWith("Package.") ) {
-                var result = this.SimpleEval(macroKey.Substring(8));
-                if (result == null || string.Empty == result.ToString()) {
-                    return null;
-                }
-
-                return result.ToString();
-            }
-            return null;
         }
 
         internal void ProcessCertificateInformation() {
@@ -246,6 +231,10 @@ namespace CoApp.Autopackage {
 
             foreach (var asm in Source.AssemblyRules) {
                 var fileList = FileList.ProcessIncludes(null, asm, "assembly", "include", Source.FileRules, Environment.CurrentDirectory);
+                if( string.IsNullOrEmpty(asm.Parameter) ) {
+                    AutopackageMessages.Invoke.Error(
+                       MessageCode.AssemblyHasNoName, asm.SourceLocation, "Assembly definition requires name.");
+                }
                 Assemblies.Add(new PackageAssembly(asm.Parameter, asm, fileList));
             }
 
@@ -318,6 +307,8 @@ namespace CoApp.Autopackage {
                     DependentPackages.Add(toolkitPackage);    
                 }
             }
+
+            AutopackageMain._easyPackageManager.SetAllFeedsStale().Wait();
 
             foreach (var pkgName in Source.RequiresRules.SelectMany(each => each["package"].Values)) {
                 // for now, lets just see if we can do a package match, and grab just that packages

@@ -43,7 +43,9 @@ namespace CoApp.Toolkit.Scripting.Languages.PropertySheet {
              return GetEnumerator();
          }
 
-         internal PropertySheet ParentPropertySheet { get; set; }
+         internal Rule ParentRule { get; set;  }
+         // internal PropertySheet ParentPropertySheet { get; set; }
+         internal PropertySheet ParentPropertySheet { get { return ParentRule.ParentPropertySheet; } }
      }
 
     public class PropertyValue : IPropertyValue {
@@ -76,7 +78,7 @@ namespace CoApp.Toolkit.Scripting.Languages.PropertySheet {
                     SourceString = "",
                     Value = values[0],
                     Values = values,
-                    ParentPropertySheet = ParentPropertySheet
+                    ParentRule = ParentRuleProperty.ParentRule
                 };
 
             return null;
@@ -276,7 +278,9 @@ namespace CoApp.Toolkit.Scripting.Languages.PropertySheet {
     }
 
     public class Rule : DynamicObject {
-        internal readonly PropertySheet ParentPropertySheet;
+        // this may get set if the parent is not the current doc.
+        internal PropertySheet ParentPropertySheet;
+
         private readonly List<NewRuleProperty> _properties = new List<NewRuleProperty>();
         public string Class { get; set; }
         public string Id { get; set; }

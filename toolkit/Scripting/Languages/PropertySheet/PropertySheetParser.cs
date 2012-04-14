@@ -177,6 +177,11 @@ namespace CoApp.Toolkit.Scripting.Languages.PropertySheet {
                                 var includedSheet = new PropertySheet();
                                 // parse the contents of that file into the current property sheet.
                                 new PropertySheetParser(document, filename, includedSheet).Parse();
+
+                                foreach( var r in includedSheet.Rules) {
+                                    r.ParentPropertySheet = _propertySheet;
+                                }
+
                                 _propertySheet.ImportedSheets.Add(filename, includedSheet);
 
                                 state = ParseState.Global;

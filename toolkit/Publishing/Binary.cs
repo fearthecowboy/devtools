@@ -715,25 +715,34 @@ namespace CoApp.Developer.Toolkit.Publishing {
 
         private Binary FindAssembly(string assemblyName, string version) {
             // look thru the loaded binaries first
-            var binary = LoadedFiles.Values.FirstOrDefault(each => each.IsManaged && each._mutableAssembly.Name.Value == assemblyName && each._mutableAssembly.Version.ToString() == version);
-            
-            if (binary != null) {
-                return binary;
-            }
+            try {
+                var binary = LoadedFiles.Values.FirstOrDefault(each => each.IsManaged && each._mutableAssembly.Name.Value == assemblyName && each._mutableAssembly.Version.ToString() == version);
 
-            // it's not already loaded
-            // try finding it in the folders where we are working so far...
-            foreach (var folder in LoadedFiles.Keys.ToArray().Union(LoadingTasks.Keys.ToArray()).Select(each => Path.GetDirectoryName(each.GetFullPath()).ToLower()).Distinct()) {
-                var probe = Path.Combine(folder, assemblyName) + ".dll";
-                if (File.Exists(probe)) {
-                    // let's load this one...
-                    // GS01: We may need to get smarter here... just sayin'
-                    var bin = Load(probe, _loadOptions).Result;
+                if (binary != null) {
+                    return binary;
+                }
 
-                    if (bin.IsManaged && bin._mutableAssembly.Name.Value == assemblyName && bin._mutableAssembly.Version.ToString() == version) {
-                        return bin;
+                // it's not already loaded
+                // try finding it in the folders where we are working so far...
+                foreach (var folder in LoadedFiles.Keys.ToArray().Union(LoadingTasks.Keys.ToArray()).Select(each => Path.GetDirectoryName(each.GetFullPath()).ToLower()).Distinct()) {
+                    var probe = Path.Combine(folder, assemblyName) + ".dll";
+                    if (File.Exists(probe)) {
+                        // let's load this one...
+                        // GS01: We may need to get smarter here... just sayin'
+                        var bin = Load(probe, _loadOptions).Result;
+
+                        if (bin.IsManaged && bin._mutableAssembly.Name.Value == assemblyName && bin._mutableAssembly.Version.ToString() == version) {
+                            return bin;
+                        }
                     }
                 }
+            } catch(InvalidOperationException ) {
+                // this can happen if the collection changes during the operation (and can actually happen in the middle of .ToArray() 
+                // since, locking the hell out of the collections isn't worth the effort, we'll just try again on this type of exception
+                // and pray the collection won't keep changing :)
+                //
+                // worst case scenario, is that this spins for a bit or is the eventual cause of the system *trying* to load something twice.
+                return FindAssembly(assemblyName, version);
             }
             return null;
         }

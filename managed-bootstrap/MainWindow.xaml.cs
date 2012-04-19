@@ -128,6 +128,7 @@ namespace CoApp.Bootstrapper {
             // try to short circuit early
             if (SingleStep.Progress.Progress >= 98 && !SingleStep.Cancelling) {
                 MainWin = this;
+                Topmost = false;
                 return;
             }
 

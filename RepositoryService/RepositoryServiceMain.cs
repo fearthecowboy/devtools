@@ -25,7 +25,6 @@ namespace CoApp.RepositoryService {
     using Toolkit.Network;
 
     public class RepositoryServiceMain  : AsyncConsoleProgram {
-        internal static PackageManagerMessages _messages;
         private static bool _verbose = false;
         internal static readonly RegistryView Settings = RegistryView.CoAppUser["RepositoryService"];
 
@@ -38,22 +37,6 @@ namespace CoApp.RepositoryService {
         }
 
         protected override int Main(IEnumerable<string> args) {
-            _messages = new PackageManagerMessages {
-                UnexpectedFailure = UnexpectedFailure,
-                NoPackagesFound = NoPackagesFound,
-                PermissionRequired = OperationRequiresPermission,
-                Error = MessageArgumentError,
-                RequireRemoteFile =
-                    (canonicalName, remoteLocations, localFolder, force) =>
-                        Downloader.GetRemoteFile(canonicalName, remoteLocations, localFolder, force, new RemoteFileMessages {
-                            Progress = (itemUri, percent) => { "Downloading {0}".format(itemUri.AbsoluteUri).PrintProgressBar(percent); },
-                        }, _messages),
-                OperationCanceled = CancellationRequested,
-                PackageSatisfiedBy = (original, satisfiedBy) => { original.SatisfiedBy = satisfiedBy; },
-                PackageBlocked = BlockedPackage,
-                UnknownPackage = UnknownPackage,
-            };
-            
             var hosts = new string[] { "*" };
             var ports = new int[] { 80 };
             var commitMessage = "trigger";

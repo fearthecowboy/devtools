@@ -363,18 +363,6 @@ pTK [options] action [buildconfiguration...]
                     SetSDK("Windows Sdk 6", _setenvcmd6, platform);
                     break;
 
-                    /*
-                case "wdk7600":
-                    var wdkFolder = RegistryView.System[@"SOFTWARE\Wow6432Node\Microsoft\WDKDocumentation\7600.091201\Setup", "Build"].Value as string;
-            
-                    if (string.IsNullOrEmpty(wdkFolder)) {
-                        wdkFolder = RegistryView.System[@"SOFTWARE\Microsoft\WDKDocumentation\7600.091201\Setup", "Build"].Value as string;
-                    }
-                    
-                    // C:\WinDDK\7600.16385.1\ fre x86 WIN7
-                    SetSDK("Windows WDK 7600", _wdksetenvcmd7600, platform);
-                    break;
-                    */
                 case "mingw":
                     SetMingwCompiler(platform);
                     break;
@@ -384,12 +372,112 @@ pTK [options] action [buildconfiguration...]
             }
         }
 
+        private void SetWDK( Rule build , string platform ) {
+            // pick up any wdk settings from the build/wdk property
+            var frechk = "fre";
+            var target = "XP";
+
+            var wdkProperty = build.HasProperty("wdk") ? build["wdk"] : null;
+
+            if( wdkProperty != null ) {
+                frechk = wdkProperty["frechk"] == null ? "fre" : wdkProperty["frechk"].Value;
+                target = wdkProperty["target"] == null ? "xp" : wdkProperty["target"].Value;
+            }
+            // start with the directory for the wdk 
+            var ddkLocation = Path.GetDirectoryName(_wdksetenvcmd7600.GetFullPath());
+            if( ddkLocation.EndsWith("bin")) {
+                ddkLocation = Path.GetDirectoryName(ddkLocation);
+            }
+
+            if( ddkLocation.IndexOf(' ') > -1 ) {
+                ddkLocation = "\"{0}\"".format(ddkLocation);
+            }
+
+            Environment.SetEnvironmentVariable("current_wdk_location", ddkLocation);
+            
+            var cmdline = ddkLocation;
+
+            // set the free/checked flag
+            switch( frechk.ToLower() ) {
+                case "check":
+                case "checked":
+                case "chk":
+                    cmdline += " chk";
+                    Environment.SetEnvironmentVariable("current_wdk_freechk", "chk" );
+                    break;
+
+                default:
+                    cmdline += " fre";
+                    Environment.SetEnvironmentVariable("current_wdk_freechk",  "fre");
+                    break;
+            }
+
+            // platform choice
+            cmdline += " "+platform.NormalizePlatform();
+
+            // target OS
+            switch( target.ToLower() ) {
+                case "wlh":
+                case "lh":
+                case "vista":
+                case "server2008":
+                case "2008":
+                case "windows6":
+                case "win6":
+                case "6":
+                    cmdline += " WLH";
+                    Environment.SetEnvironmentVariable("current_wdk_target", "WLH" );
+                    break;
+
+                case "win7":
+                case "7":
+                case "win6.1":
+                case "6.1":
+                case "2008r2":
+                case "r2":
+                case "server2008r2":
+                    cmdline += " WIN7";
+                    Environment.SetEnvironmentVariable("current_wdk_target", "WIN7");
+                    break;
+
+                case "wnet":
+                case "2003":
+                case "server2003":
+                case "5.2":
+                case "win5.2":
+                    cmdline += " WNET";
+                    Environment.SetEnvironmentVariable("current_wdk_target", "WNET");
+                    break;
+                
+                case "HAL":
+                    cmdline += " HAL";
+                    Environment.SetEnvironmentVariable("current_wdk_target", "HAL");
+                    break;
+
+                default:
+                    cmdline += " WXP";
+                    Environment.SetEnvironmentVariable("current_wdk_target", "WXP");
+                    break;
+            }
+
+            Console.WriteLine(@"WDK COMMAND LINE: ""{0}"" {1} & set ", _wdksetenvcmd7600, cmdline );
+
+            _cmdexe.Exec(@"/c ""{0}"" {1} & set ", _wdksetenvcmd7600, cmdline );
+
+            foreach (var x in _cmdexe.StandardOut.Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries)) {
+                var p = x.IndexOf("=");
+                if (p > 0) {
+                    Environment.SetEnvironmentVariable(x.Substring(0, p), x.Substring(p + 1));
+                }
+            }
+        }
+
         private void SwitchSdk( string sdk, string platform ) {
 
             switch (sdk) {
                 case "sdk7.1":
                     SetSDK("Windows Sdk 7.1", _setenvcmd71, platform);
-                    break;
+                     break;
 
                 case "sdk7":
                     SetSDK("Windows Sdk 7", _setenvcmd7, platform);
@@ -401,10 +489,6 @@ pTK [options] action [buildconfiguration...]
 
                 case "feb2003":
                     SetSDK("Platform SDK Feb 2003", _setenvcmd6, platform);
-                    break;
-
-                case "wdk7600":
-                    SetSDK("Windows WDK 7600", _wdksetenvcmd7600, platform);
                     break;
 
                 case "none":
@@ -798,7 +882,7 @@ pTK [options] action [buildconfiguration...]
                                 Configuration = build.Name,
                                 Compiler = compiler != null ? compiler.Value : "sdk7.1",
                                 Sdk = sdk != null ? sdk.Value : "sdk7.1",
-                                Platform = platform != null ? platform.Value : "x86",
+                                Platform = platform != null ? platform.Value.NormalizePlatform() : "x86",
                                 Number_of_Outputs = targets != null ? targets.Values.Count() : 0
                             }).ToTable().ConsoleOut();
                         break;
@@ -926,19 +1010,38 @@ REM ===================================================================
             ResetEnvironment();
 
             var compilerProperty = build["compiler"];
+            var sdkProperty = build["sdk"];
 
             var compiler = compilerProperty != null ? compilerProperty.Value : "sdk7.1";
-            var sdkProperty = build["sdk"];
             var sdk = sdkProperty != null ? sdkProperty.Value : "sdk7.1";
 
             var platformProperty = build["platform"];
-            var platform = platformProperty != null ? platformProperty.Value : "x86";
+            var platform = platformProperty != null ? platformProperty.Value.NormalizePlatform() : "x86";
 
-            if (!compiler.Contains("sdk") && !compiler.Contains("wdk")) {
-                SwitchSdk(sdk, platform);
+
+            if (compiler.Equals("wdk", StringComparison.InvariantCultureIgnoreCase) || compiler.Equals("ddk", StringComparison.InvariantCultureIgnoreCase) || sdk.Equals("wdk", StringComparison.InvariantCultureIgnoreCase) || sdk.Equals("ddk", StringComparison.InvariantCultureIgnoreCase)) {
+                // using the WDK trumps other settings.
+                if (_verbose) {
+                    using (new ConsoleColors(ConsoleColor.White, ConsoleColor.Black)) {
+                        Console.Write("Setting SDK: ");
+                    }
+                    using (new ConsoleColors(ConsoleColor.Green, ConsoleColor.Black)) {
+                        Console.Write("WDK");
+                    }
+                    using (new ConsoleColors(ConsoleColor.Yellow, ConsoleColor.Black)) {
+                        Console.WriteLine(" for [{0}]", platform);
+                    }
+                }
+                compiler = "wdk";
+                sdk = "wdk";
+                SetWDK( build, platform );
             }
-
-            SwitchCompiler(compiler,platform);
+            else {
+                if (!compiler.Contains("sdk")) {
+                    SwitchSdk(sdk, platform);
+                }
+                SwitchCompiler(compiler, platform);
+            }
 
             Environment.SetEnvironmentVariable("current_compiler", compiler);
             Environment.SetEnvironmentVariable("current_sdk", sdk);
@@ -1479,6 +1582,21 @@ REM ===================================================================
                 dictionary.Add(key, value);
             }
             return value;
+        }
+
+        public static string NormalizePlatform( this string platform ) {
+            if (string.IsNullOrEmpty(platform)) {
+                return "x86";
+            }
+
+            switch( platform.ToLower()) {
+                case "x64":
+                case "amd64":
+                case "64":
+                    return "x64";
+            }
+
+            return "x86";
         }
     }
 }

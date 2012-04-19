@@ -184,34 +184,6 @@ namespace CoApp.RepositoryService {
             return 0;
         }
 
-        private void UnknownPackage(string canonicalName) {
-            Console.WriteLine("Unknown Package {0}", canonicalName);
-        }
-
-        private void BlockedPackage(string canonicalName) {
-            Console.WriteLine("Package {0} is blocked", canonicalName);
-        }
-
-        private void CancellationRequested(string obj) {
-            Console.WriteLine("Cancellation Requested.");
-        }
-
-        private void MessageArgumentError(string arg1, string arg2, string arg3) {
-            Console.WriteLine("Message Argument Error {0}, {1}, {2}.", arg1, arg2, arg3);
-        }
-
-        private void OperationRequiresPermission(string policyName) {
-            Console.WriteLine("Operation requires permission Policy:{0}", policyName);
-        }
-
-        private void NoPackagesFound() {
-            Console.WriteLine("Did not find any packages.");
-        }
-
-        private void UnexpectedFailure(Exception obj) {
-            throw new ConsoleException("SERVER EXCEPTION: {0}\r\n{1}", obj.Message, obj.StackTrace);
-        }
-
         private void Verbose(string text, params object[] objs) {
             if (_verbose) {
                 Console.WriteLine(text.format(objs));

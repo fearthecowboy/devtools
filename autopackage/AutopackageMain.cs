@@ -109,7 +109,14 @@ namespace CoApp.Autopackage {
         private readonly List<string> _warnings = new List<string>();
         private readonly List<string> _msgs = new List<string>();
 
-        internal static EasyPackageManager _easyPackageManager = new EasyPackageManager();
+        internal static EasyPackageManager _easyPackageManager = new EasyPackageManager((uri, location, progress) => {
+            /*progress*/
+            "Downloading {0}".format(uri.UrlDecode()).PrintProgressBar(progress);
+
+        }, (uri, location) => {
+            /*completed*/
+            Console.WriteLine();
+        });
         
         // command line stuff
         
@@ -141,34 +148,6 @@ namespace CoApp.Autopackage {
             return new AutopackageMain().Startup(args);
         }
 
-        private void UnknownPackage(string canonicalName) {
-            Console.WriteLine("PKGMGR RESPONSE: Unknown Package {0}", canonicalName);
-        }
-
-        private void BlockedPackage(string canonicalName) {
-            Console.WriteLine("PKGMGR RESPONSE: Package {0} is blocked", canonicalName);
-        }
-
-        private void CancellationRequested(string obj) {
-            Console.WriteLine("PKGMGR RESPONSE: Cancellation Requested.");
-        }
-
-        private void MessageArgumentError(string arg1, string arg2, string arg3) {
-            Console.WriteLine("PKGMGR RESPONSE: Message Argument Error {0}, {1}, {2}.", arg1, arg2, arg3);
-        }
-
-        private void OperationRequiresPermission(string policyName) {
-            Console.WriteLine("PKGMGR RESPONSE: Operation requires permission Policy:{0}", policyName);
-        }
-
-        private void NoPackagesFound() {
-            Console.WriteLine("PKGMGR RESPONSE: Did not find any packages.");
-        }
-
-        private void UnexpectedFailure(Exception obj) {
-            throw new ConsoleException("SERVER EXCEPTION: {0}\r\n{1}", obj.Message, obj.StackTrace);
-        }
-
         /// <summary>
         ///   The (non-static) startup method
         /// </summary>
@@ -182,6 +161,7 @@ namespace CoApp.Autopackage {
             // force temporary folder to be where we want it to be.
 
             _easyPackageManager.AddSessionFeed(Environment.CurrentDirectory).Wait();
+
 
             var macrovals = new Dictionary<string, string>();
 
@@ -409,7 +389,7 @@ namespace CoApp.Autopackage {
             // recognize the new package in case it is needed for another package.
             if (!string.IsNullOrEmpty(msiFile) && File.Exists(msiFile)) {
                 // Console.WriteLine("\r\n Recognizing: {0}", msiFile);
-                PackageManager.Instance.RecognizeFile(null, msiFile, null, null).Wait();
+                _easyPackageManager.RecognizeFile(msiFile).Wait();
             }
 
         }

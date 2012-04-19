@@ -38,7 +38,14 @@ namespace CoApp.mkRepo {
         internal AtomFeed Feed;
 
         private PackageManagerMessages _messages;
-        private readonly PackageManager _pm = PackageManager.Instance;
+        private readonly EasyPackageManager _easyPackageManager = new EasyPackageManager((uri, location, progress) => {
+            /*progress*/
+            "Downloading {0}".format(uri.UrlDecode()).PrintProgressBar(progress);
+
+        }, (uri, location) => {
+            /*completed*/
+            Console.WriteLine();
+        });
 
         private static int Main(string[] args) {
             return new mkRepoMain().Startup(args);
@@ -49,26 +56,6 @@ namespace CoApp.mkRepo {
         }
 
         protected override int Main(IEnumerable<string> args) {
-            _messages = new PackageManagerMessages {
-                UnexpectedFailure = UnexpectedFailure,
-                NoPackagesFound = NoPackagesFound,
-                PermissionRequired = OperationRequiresPermission,
-                Error = MessageArgumentError,
-                RequireRemoteFile =
-                    (canonicalName, remoteLocations, localFolder, force) =>
-                        Downloader.GetRemoteFile(canonicalName, remoteLocations, localFolder, force, new RemoteFileMessages {
-                            Progress = (itemUri, percent) => { "Downloading {0}".format(itemUri.AbsoluteUri).PrintProgressBar(percent); },
-                        }, _messages),
-                OperationCanceled = CancellationRequested,
-                PackageSatisfiedBy = (original, satisfiedBy) => { original.SatisfiedBy = satisfiedBy; },
-                PackageBlocked = BlockedPackage,
-                UnknownPackage = UnknownPackage,
-            };
-
-            Verbose("# Connecting to Service...");
-            _pm.ConnectAndWait("mkRepo tool", null, 5000);
-            Verbose("# Connected to Service...");
-
             try {
                 #region command line parsing
 
@@ -164,11 +151,12 @@ namespace CoApp.mkRepo {
                 if( _input.IsWebUrl()) {
                     var inputFilename = "feed.atom.xml".GenerateTemporaryFilename();
 
-                    RemoteFile.GetRemoteFile(_input, inputFilename).Get(new RemoteFileMessages() {
-                        Completed = (uri) => { },
-                        Failed = (uri) => { inputFilename.TryHardToDelete(); },
-                        Progress = (uri, progress) => { }
-                    }).Wait();
+                    var rf = new RemoteFile(_input, inputFilename,  (uri) => { },
+                         (uri) => { inputFilename.TryHardToDelete(); },
+                         (uri, progress) => {
+                             "Downloading {0}".format(uri).PrintProgressBar(progress);
+                         });
+                    rf.Get();
 
                     if( !File.Exists(inputFilename) ) {
                         throw new ConsoleException("Failed to get input feed from '{0}' ", _input);
@@ -187,11 +175,11 @@ namespace CoApp.mkRepo {
             Logger.Message("Selecting local packages");
             var files = _packages.FindFilesSmarter();
 
-            _pm.GetPackages(files, dependencies:false, latest:false, messages:_messages).ContinueWith((antecedent) => {
+            _easyPackageManager.GetPackages(files, dependencies:false, latest:false).ContinueWith((antecedent) => {
                 var packages = antecedent.Result;
 
                 foreach (var pkg in packages) {
-                    _pm.GetPackageDetails(pkg.CanonicalName, _messages).Wait();
+                    _easyPackageManager.GetPackageDetails(pkg.CanonicalName).Wait();
 
                     if (!string.IsNullOrEmpty(pkg.PackageItemText)) {
                         var item = SyndicationItem.Load<AtomItem>(XmlReader.Create(new StringReader(pkg.PackageItemText)));
@@ -227,34 +215,6 @@ namespace CoApp.mkRepo {
 
             // Feed.ToString()
             // PackageFeed.Add(PackageModel);
-        }
-
-        private void UnknownPackage(string canonicalName) {
-            Console.WriteLine("Unknown Package {0}", canonicalName);
-        }
-
-        private void BlockedPackage(string canonicalName) {
-            Console.WriteLine("Package {0} is blocked", canonicalName);
-        }
-
-        private void CancellationRequested(string obj) {
-            Console.WriteLine("Cancellation Requested.");
-        }
-
-        private void MessageArgumentError(string arg1, string arg2, string arg3) {
-            Console.WriteLine("Message Argument Error {0}, {1}, {2}.", arg1, arg2, arg3);
-        }
-
-        private void OperationRequiresPermission(string policyName) {
-            Console.WriteLine("Operation requires permission Policy:{0}", policyName);
-        }
-
-        private void NoPackagesFound() {
-            Console.WriteLine("Did not find any packages.");
-        }
-
-        private void UnexpectedFailure(Exception obj) {
-            throw new ConsoleException("SERVER EXCEPTION: {0}\r\n{1}", obj.Message, obj.StackTrace);
         }
 
         private void Verbose(string text, params object[] objs) {

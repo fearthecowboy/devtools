@@ -66,6 +66,15 @@ namespace CoApp.RepositoryService {
         }
         */
 
+        private static EasyPackageManager _easyPackageManager = new EasyPackageManager((uri, location, progress) => {
+            /*progress*/
+            "Downloading {0}".format(uri.UrlDecode()).PrintProgressBar(progress);
+
+        }, (uri, location) => {
+            /*completed*/
+            Console.WriteLine();
+        });
+
         public override Task Put(HttpListenerResponse response, string relativePath, byte[] data) {
             if( data.Length < 1 ) {
                 response.StatusCode = 500;
@@ -78,11 +87,8 @@ namespace CoApp.RepositoryService {
                     var filename = "UploadedFile.bin".GenerateTemporaryFilename();
                     File.WriteAllBytes(filename, data);
 
-
-                    PackageManager.Instance.ConnectAndWait("RepositoryService", null, 5000);
-
                     // verify that the file is actually a valid package
-                    PackageManager.Instance.GetPackages(filename, messages: RepositoryServiceMain._messages).ContinueWith(
+                    _easyPackageManager.GetPackages(filename).ContinueWith(
                         antecedent => {
                             if( antecedent.IsFaulted ) {
                                 Console.WriteLine("Fault occurred after upload: {0}", filename);
@@ -111,7 +117,7 @@ namespace CoApp.RepositoryService {
 
                             var targetFilename = (pkg.CanonicalName + ".msi").ToLower();
                             var location = new Uri(_packagePrefixUrl, targetFilename);
-                            PackageManager.Instance.GetPackageDetails(pkg.CanonicalName, RepositoryServiceMain._messages).Wait();
+                            _easyPackageManager.GetPackageDetails(pkg.CanonicalName).Wait();
 
                             //copy the package to the destination
                             if (_cloudFileSystem != null) {
@@ -197,9 +203,6 @@ namespace CoApp.RepositoryService {
                                         ConsoleExtensions.PrintProgressBar("{0} => {1}".format(_localfeedLocation+".gz", _packageStorageFolder), progress);
                                     });
                                     Console.WriteLine();
-                                    
-                                   
-                                    
                                 }
                             }
 

@@ -96,8 +96,9 @@ namespace CoApp.Bootstrapper {
         /// This is the version of coapp that must be installed for the bootstrapper to continue.
         /// This should really only be updated when there is breaking changes in the client library
         /// </summary>
-        public const string MIN_COAPP_VERSION = "1.2.0.141";
+        public const string MIN_COAPP_VERSION = "1.2.0.165";
 
+        public const string INCOMPATIBLE_VERSION = "1.2.0.164";
 
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
@@ -256,8 +257,16 @@ namespace CoApp.Bootstrapper {
             return (((UInt64)major) << 48) + (((UInt64)minor) << 32) + (((UInt64)build) << 16) + (UInt64)revision;
         }
 
+        internal static bool IsIncompatibleVersionInstalled {
+            get {
+                
+                return false;
+            }
+        }
+
         internal static bool IsCoAppInstalled {
             get {
+                
                 try {
                     var requiredVersion = VersionStringToUInt64(MIN_COAPP_VERSION);
                     var ace = new AssemblyCacheEnum("CoApp.Client");

@@ -341,7 +341,7 @@ namespace CoApp.Autopackage {
                     // makes sure it takes the latest one that matches. Hey, if you wanted an earlier one, you'd say explicitly :p
                     var pkg = packages.OrderByDescending(each => each.Version).FirstOrDefault();
 
-                    Console.WriteLine("Package Dependency: {0} -> {1}", pkg.CanonicalName, pkg.ProductCode);
+                    // Console.WriteLine("Package Dependency: {0} -> {1}", pkg.CanonicalName, pkg.ProductCode);
 
                     AutopackageMain._easyPackageManager.GetPackageDetails(pkg.CanonicalName).Wait();
 
@@ -353,12 +353,11 @@ namespace CoApp.Autopackage {
                 }
             }
 
-
             foreach (var pkg in DependentPackages) {
-                if (Dependencies == null ) {
-                    Dependencies = new List<Guid>();
+                if (PackageDependencies == null ) {
+                    PackageDependencies = new List<string>();
                 }
-                Dependencies.Add(new Guid(pkg.ProductCode));
+                PackageDependencies.Add(pkg.CanonicalName);
                 // also, add that package's atom feed items to this package's feed.
                 if(! string.IsNullOrEmpty(pkg.PackageItemText) ) {
                     var item = SyndicationItem.Load<AtomItem>(XmlReader.Create(new StringReader(pkg.PackageItemText)));

@@ -65,23 +65,17 @@ namespace CoApp.Autopackage {
             }
 
             AutopackageMessages.Invoke.Verbose("Loaded certificate with private key {0}", Certificate.Location);
-
             if (Remember) {
                 AutopackageMessages.Invoke.Verbose("Storing certificate details in the registry.");
                 Certificate.RememberPassword();
                 CertificateReference.Default = Certificate;
             }
-
-           
         }
 
         internal void LoadPackageSourceData(string autopackageSourceFile) {
             // ------ Load Information to create Package 
 
             FindCertificate();
-
-            // better make sure that the package manager is running/listening...
-            StartPackageManager();
 
             // load up all the specified property sheets
             LoadPropertySheets(autopackageSourceFile);
@@ -233,17 +227,6 @@ namespace CoApp.Autopackage {
             }
         }
 
-        internal void StartPackageManager() {
-            // ok, we're looking like we're ready to need the package manager.
-            // make sure its running.
-            PackageManager.Instance.ConnectAndWait("autopackage", null, 15000);
-
-            PackageManager = PackageManager.Instance;
-            PackageManager.AddFeed(Environment.CurrentDirectory,true);
-
-            if (AutopackageMain._verbose) {
-                PackageManager.SetLogging(true, true, true);
-            }
-        }
+        
     }
 }

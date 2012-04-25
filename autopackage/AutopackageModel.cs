@@ -246,7 +246,7 @@ namespace CoApp.Autopackage {
             foreach (var asm in Source.AssemblyRules) {
                 var fileList = FileList.ProcessIncludes(null, asm, "assembly", "include", Source.FileRules, Environment.CurrentDirectory);
                 if( string.IsNullOrEmpty(asm.Parameter) ) {
-                    AutopackageMessages.Invoke.Error(
+                    Event<Error>.Raise(
                        MessageCode.AssemblyHasNoName, asm.SourceLocation, "Assembly definition requires name.");
                 }
                 Assemblies.Add(new PackageAssembly(asm.Parameter, asm, fileList));
@@ -263,7 +263,7 @@ namespace CoApp.Autopackage {
             foreach( var asm in Assemblies ) {
                 var conflicts = Assemblies.Where(each => asm != each && each.Name == asm.Name && each.Culture == asm.Culture);
                 foreach (var c in conflicts) {
-                    AutopackageMessages.Invoke.Error(
+                    Event<Error>.Raise(
                         MessageCode.DuplicateAssemblyDefined, c.Rule.SourceLocation, "Assembly with name/culture '{0}'/'{1}' defined more than once.", c.Name, c.Culture);
                 }
             }
@@ -274,7 +274,7 @@ namespace CoApp.Autopackage {
                     var asms = Assemblies.Where(each => each.Name == name );
                     if (asms.Count() > 1) {
                         foreach (var a in asms) {
-                            AutopackageMessages.Invoke.Error(
+                            Event<Error>.Raise(
                                 MessageCode.DuplicateAssemblyDefined, a.Rule.SourceLocation, "Assembly with name '{0}' defined more than once.", name);
                         }
                     }
@@ -289,7 +289,7 @@ namespace CoApp.Autopackage {
             var arches = Assemblies.Select(each => each.Architecture).Distinct().ToArray();
             if (arches.Length > 1) {
                 foreach (var asm in Assemblies) {
-                    AutopackageMessages.Invoke.Error(
+                    Event<Error>.Raise(
                         MessageCode.MultipleAssemblyArchitectures, asm.Rule.SourceLocation,
                         "All Assemblies must have the same architecture. '{0}' architecure => {1}.", asm.Name, asm.Architecture);
                 }
@@ -331,11 +331,11 @@ namespace CoApp.Autopackage {
                     var packages = AutopackageMain._easyPackageManager.GetPackages(pkgName, null, null, null, null, null, null, null, false, null, false).Result.OrderByDescending( each => each.Version).ToArray();
 
                     if( packages.IsNullOrEmpty()) {
-                        AutopackageMessages.Invoke.Error( MessageCode.FailedToFindRequiredPackage, null, "Failed to find package '{0}'.", pkgName);
+                        Event<Error>.Raise( MessageCode.FailedToFindRequiredPackage, null, "Failed to find package '{0}'.", pkgName);
                     }
 
                     if( packages.Select(each => each.Name).Distinct().Count() > 1 ) {
-                        AutopackageMessages.Invoke.Error(MessageCode.MultiplePackagesMatched, null, "Multiple Packages Matched package reference: '{0}'.", pkgName);
+                        Event<Error>.Raise(MessageCode.MultiplePackagesMatched, null, "Multiple Packages Matched package reference: '{0}'.", pkgName);
                     }
 
                     // makes sure it takes the latest one that matches. Hey, if you wanted an earlier one, you'd say explicitly :p
@@ -348,7 +348,7 @@ namespace CoApp.Autopackage {
                     DependentPackages.Add(pkg);
                     
                 } catch (Exception e) {
-                    AutopackageMessages.Invoke.Error(
+                    Event<Error>.Raise(
                         MessageCode.FailedToFindRequiredPackage, null, "Failed to find package '{0}'. [{1}]", pkgName, e.Message);
                 }
             }
@@ -374,7 +374,7 @@ namespace CoApp.Autopackage {
         private void DigitallySign(string filename) {
             _tasks.Add(Binary.Load(filename , BinaryLoadOptions.All).ContinueWith(antecedent => {
                 if (antecedent.IsFaulted) {
-                    AutopackageMessages.Invoke.Error(MessageCode.SigningFailed, null, "Failed to load binary '{0}'", filename);
+                    Event<Error>.Raise(MessageCode.SigningFailed, null, "Failed to load binary '{0}'", filename);
                     return;
                 }
                 DigitallySign(antecedent.Result);
@@ -402,7 +402,7 @@ namespace CoApp.Autopackage {
                         try {
                             _tasks.Add(Binary.Load(file.SourcePath).ContinueWith(antecedent => {
                                 if( antecedent.IsFaulted ) {
-                                    AutopackageMessages.Invoke.Error(MessageCode.SigningFailed, null, "Failed to load binary '{0}'", file.SourcePath);
+                                    Event<Error>.Raise(MessageCode.SigningFailed, null, "Failed to load binary '{0}'", file.SourcePath);
                                     return;
                                 }
 
@@ -448,7 +448,7 @@ namespace CoApp.Autopackage {
 
                         } catch (Exception e) {
                             Logger.Error(e);
-                            AutopackageMessages.Invoke.Error(MessageCode.SigningFailed, null, "Digital Signing of binary '{0}' failed.", file.SourcePath);
+                            Event<Error>.Raise(MessageCode.SigningFailed, null, "Digital Signing of binary '{0}' failed.", file.SourcePath);
                         }
                     }
                 }
@@ -472,12 +472,12 @@ namespace CoApp.Autopackage {
                     e = (e as AggregateException).Flatten().InnerExceptions[0];
                 }
                 Logger.Error(e);
-                AutopackageMessages.Invoke.Error(MessageCode.SigningFailed, null, "Saving binary failed. (see inner exception ) {0}--{1}",e.Message, e.StackTrace );
+                Event<Error>.Raise(MessageCode.SigningFailed, null, "Saving binary failed. (see inner exception ) {0}--{1}",e.Message, e.StackTrace );
             }
 
             // now, do a post signing check to see that all assemblies are actually signed.
             foreach( var assembly in Assemblies.Where( each =>!each.FilesAreSigned ) ) {
-                AutopackageMessages.Invoke.Error(MessageCode.AssembliesMustBeSigned, null, "Assembly '{0}' has one or more binaries that are not digitally signed",assembly.Name);
+                Event<Error>.Raise(MessageCode.AssembliesMustBeSigned, null, "Assembly '{0}' has one or more binaries that are not digitally signed",assembly.Name);
             }
 
         }
@@ -488,7 +488,7 @@ namespace CoApp.Autopackage {
             Name = Source.PackageRules.GetProperty("name").Value;
 
             if (string.IsNullOrEmpty(Name)) {
-                AutopackageMessages.Invoke.Error(
+                Event<Error>.Raise(
                     MessageCode.MissingPackageName, Source.PackageRules.Last().SourceLocation, "Missing property 'name' in 'package' rule.");
             }
 
@@ -500,10 +500,10 @@ namespace CoApp.Autopackage {
                 foreach (var assembly in Assemblies) {
                     Version = assembly.Version;
                     if (Version == 0) {
-                        AutopackageMessages.Invoke.Error(
+                        Event<Error>.Raise(
                             MessageCode.AssemblyHasNoVersion, assembly.Rule.SourceLocation, "Assembly '{0}/{1}' doesn't have a version.", assembly.Name, assembly.Culture ?? "");
                     } else {
-                        AutopackageMessages.Invoke.Warning(
+                        Event<Warning>.Raise(
                             MessageCode.AssumingVersionFromAssembly, Assemblies.First().Rule.SourceLocation,
                             "Package Version not specified, assuming version '{0}' from first assembly", Version.ToString());
 
@@ -523,7 +523,7 @@ namespace CoApp.Autopackage {
                         if (binary.IsPEFile) {
                             Version = binary.FileVersion;
 
-                            AutopackageMessages.Invoke.Warning(
+                            Event<Warning>.Raise(
                                 MessageCode.AssumingVersionFromApplicationFile, null,
                                 "Package Version not specified, assuming version '{0}' from application file '{1}'", Version.ToString(),
                                 file.SourcePath);
@@ -545,7 +545,7 @@ namespace CoApp.Autopackage {
                 }
 
                 if (Version == 0) {
-                    AutopackageMessages.Invoke.Error(MessageCode.UnableToDeterminePackageVersion, null, "Unable to determine package version.");
+                    Event<Error>.Raise(MessageCode.UnableToDeterminePackageVersion, null, "Unable to determine package version.");
                     return; // fast fail.
                 }
                 
@@ -558,14 +558,14 @@ namespace CoApp.Autopackage {
 
             // make sure that all the assemblies have the same version as the package
             foreach (var assembly in Assemblies.Where(each => each.Version != Version)) {
-                AutopackageMessages.Invoke.Error(MessageCode.AssemblyVersionDoesNotMatch, null, "Assembly '{0}' has different version ({1}) that this package ({2}) .", assembly.Name, assembly.Version, Version);
+                Event<Error>.Raise(MessageCode.AssemblyVersionDoesNotMatch, null, "Assembly '{0}' has different version ({1}) that this package ({2}) .", assembly.Name, assembly.Version, Version);
             }
 
             // check to see that all the assemblies are the same version.
             var versions = Assemblies.Select(each => each.Version).Distinct().ToArray();
             if (versions.Length > 1) {
                 foreach (var asm in Assemblies) {
-                    AutopackageMessages.Invoke.Error(
+                    Event<Error>.Raise(
                         MessageCode.MultipleAssemblyVersions, asm.Rule.SourceLocation, "All Assemblies must have the same version. '{0}' Version => {1}.",
                         asm.Name, asm.Version);
                 }
@@ -582,7 +582,7 @@ namespace CoApp.Autopackage {
             // is it still not set?
             if (Architecture == Architecture.Auto || Architecture == Architecture.Unknown) {
                 // figure it out from what's going in the package.
-                AutopackageMessages.Invoke.Error(MessageCode.UnableToDeterminePackageArchitecture, null, "Unable to determine package architecture.");
+                Event<Error>.Raise(MessageCode.UnableToDeterminePackageArchitecture, null, "Unable to determine package architecture.");
             }
 
             if (string.IsNullOrEmpty(PublicKeyToken)) {
@@ -645,7 +645,7 @@ namespace CoApp.Autopackage {
                         var depPackage =
                             DependentPackages.FirstOrDefault(each => each.Roles.Any(role => role.Name == name && role.PackageRole == PackageRole.Assembly));
                         if (depPackage == null) {
-                            AutopackageMessages.Invoke.Error(
+                            Event<Error>.Raise(
                                 MessageCode.ManifestReferenceNotFound, manifestRule.SourceLocation,
                                 "Assembly Reference for {0} not found in this package, or any dependencies", name);
                             continue;
@@ -689,7 +689,7 @@ namespace CoApp.Autopackage {
 
                     var rc = Tools.AssemblyLinker.Exec("/link:{0} /out:{1} /v:{2}", policyConfigFile, policyFile, Version.ToString());
                     if (rc != 0) {
-                        AutopackageMessages.Invoke.Error(
+                        Event<Error>.Raise(
                             MessageCode.AssemblyLinkerError, null, "Unable to make policy assembly\r\n{0}",
                             Tools.AssemblyLinker.StandardError + Tools.AssemblyLinker.StandardOut);
                     }
@@ -774,12 +774,12 @@ namespace CoApp.Autopackage {
                     IconImage = Image.FromFile(iconFilename);
                 }
                 catch (Exception e) {
-                    AutopackageMessages.Invoke.Warning(MessageCode.BadIconReference, Source.MetadataRules.GetProperty("icon").SourceLocation,
+                    Event<Warning>.Raise(MessageCode.BadIconReference, Source.MetadataRules.GetProperty("icon").SourceLocation,
                         "Unable to use specified image for icon {0}", e.Message);
                 }
             }
             else {
-                AutopackageMessages.Invoke.Warning(MessageCode.NoIcon, null , "Image for icon not specified", iconFilename);
+                Event<Warning>.Raise(MessageCode.NoIcon, null , "Image for icon not specified", iconFilename);
             }
 
             
@@ -814,7 +814,7 @@ namespace CoApp.Autopackage {
                 if( DateTime.TryParse(pubDate,out dt) ) {
                     PackageDetails.PublishDate = dt;
                 } else {
-                    AutopackageMessages.Invoke.Warning(MessageCode.BadDate, Source.MetadataRules.GetProperty("publish-date").SourceLocation,
+                    Event<Warning>.Raise(MessageCode.BadDate, Source.MetadataRules.GetProperty("publish-date").SourceLocation,
                        "Can't parse publish date {0}, assuming now", pubDate);
                 }
             }
@@ -913,7 +913,7 @@ namespace CoApp.Autopackage {
 
 
                             default:
-                                AutopackageMessages.Invoke.Error(MessageCode.UnknownCompositionRuleType, rule.SourceLocation, "Unknown composition rule '{0}'",
+                                Event<Error>.Raise(MessageCode.UnknownCompositionRuleType, rule.SourceLocation, "Unknown composition rule '{0}'",
                                     propertyName);
                                 continue;
                         }

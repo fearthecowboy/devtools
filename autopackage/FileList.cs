@@ -17,7 +17,7 @@ namespace CoApp.Autopackage {
     using System.IO;
     using Toolkit.Extensions;
     using Toolkit.Scripting.Languages.PropertySheet;
-    
+    using Toolkit.Tasks;
 
     public class FileEntry {
         public FileEntry() {
@@ -119,7 +119,7 @@ namespace CoApp.Autopackage {
             var trim = TrimPath.none;
 
             if (!Enum.TryParse(trimPath, true, out trim)) {
-                AutopackageMessages.Invoke.Warning(MessageCode.TrimPathOptionInvalid, rule.trimPath, "trim-path option '{0}' not valid, assuming 'none'", trimPath);
+                Event<Warning>.Raise(MessageCode.TrimPathOptionInvalid, rule.trimPath, "trim-path option '{0}' not valid, assuming 'none'", trimPath);
             }
 
             switch (trim) {
@@ -141,7 +141,7 @@ namespace CoApp.Autopackage {
                 if (fileRules.GetRulesByParameter(exclude).Any()) {
                     var excludedList = GetFileList(exclude, fileRules);
                     if (excludedList == null) {
-                        AutopackageMessages.Invoke.Error(
+                        Event<Error>.Raise(
                             MessageCode.DependentFileListUnavailable, rule.SourceLocation,
                             "File list '{0}' depends on file list '{1}' which is not availible.", name, exclude);
                         continue;
@@ -181,7 +181,7 @@ namespace CoApp.Autopackage {
                         var inheritedList = GetFileList(include, fileRules);
 
                         if (inheritedList == null) {
-                            AutopackageMessages.Invoke.Error(
+                            Event<Error>.Raise(
                                 MessageCode.DependentFileListUnavailable, rule.SourceLocation,
                                 "File list '{0}' depends on file list '{1}' which is not availible.", name, include);
                             continue;
@@ -200,7 +200,7 @@ namespace CoApp.Autopackage {
                     var foundFiles = root.FindFilesSmarter(include).ToArray();
 
                     if (!foundFiles.Any()) {
-                        AutopackageMessages.Invoke.Warning(
+                        Event<Warning>.Raise(
                             MessageCode.IncludeFileReferenceMatchesZeroFiles, rule.include.SourceLocation,
                             "File include reference '{0}' matches zero files in path '{1}'", include, root);
                     }
@@ -214,14 +214,14 @@ namespace CoApp.Autopackage {
             var result = FileLists.Where(each => each.Name == name).FirstOrDefault();
             if( result != null && !result._isReady) {
                 // circular reference
-                AutopackageMessages.Invoke.Error(MessageCode.CircularFileReference, result._rule.SourceLocation, "Circular file reference. '{0}' has a file include reference that includes itself.", name);
+                Event<Error>.Raise(MessageCode.CircularFileReference, result._rule.SourceLocation, "Circular file reference. '{0}' has a file include reference that includes itself.", name);
                 return result;
             }
 
             var rules = fileRules.GetRulesByParameter(name);
             switch( rules.Count()) {
                 case 0: 
-                    AutopackageMessages.Invoke.Error(MessageCode.UnknownFileList, null, "Unknown file list '{0}'.", name);
+                    Event<Error>.Raise(MessageCode.UnknownFileList, null, "Unknown file list '{0}'.", name);
                     return null;
 
                 case 1: 
@@ -230,12 +230,12 @@ namespace CoApp.Autopackage {
 
                 default:
                     if (!AutopackageMain.Override) {
-                        AutopackageMessages.Invoke.Error(
+                        Event<Error>.Raise(
                             MessageCode.MultipleFileLists, fileRules.First().SourceLocation, "Multiple file lists with name '{0}'.", name);
                         return null;
                     }
 
-                    AutopackageMessages.Invoke.Warning(MessageCode.MultipleFileLists, fileRules.First().SourceLocation, "Multiple file lists with name '{0}', using last specified one.", name);
+                    Event<Warning>.Raise(MessageCode.MultipleFileLists, fileRules.First().SourceLocation, "Multiple file lists with name '{0}', using last specified one.", name);
                     break;
             }
 

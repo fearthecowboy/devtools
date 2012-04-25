@@ -26,6 +26,7 @@ namespace CoApp.mkRepo {
     using Toolkit.Extensions;
     using Toolkit.Logging;
     using Toolkit.Network;
+    using Toolkit.Tasks;
 
     public class mkRepoMain : AsyncConsoleProgram {
         private bool _verbose = false;
@@ -37,15 +38,7 @@ namespace CoApp.mkRepo {
 
         internal AtomFeed Feed;
 
-        private PackageManagerMessages _messages;
-        private readonly EasyPackageManager _easyPackageManager = new EasyPackageManager((uri, location, progress) => {
-            /*progress*/
-            "Downloading {0}".format(uri.UrlDecode()).PrintProgressBar(progress);
-
-        }, (uri, location) => {
-            /*completed*/
-            Console.WriteLine();
-        });
+        private readonly EasyPackageManager _easyPackageManager = new EasyPackageManager();
 
         private static int Main(string[] args) {
             return new mkRepoMain().Startup(args);
@@ -56,6 +49,14 @@ namespace CoApp.mkRepo {
         }
 
         protected override int Main(IEnumerable<string> args) {
+            CurrentTask.Events += new DownloadProgress((remoteLocation, location, progress) => {
+                "Downloading {0}".format(remoteLocation.UrlDecode()).PrintProgressBar(progress);
+            });
+
+            CurrentTask.Events += new DownloadCompleted((remoteLocation, locallocation) => {
+                Console.WriteLine();
+            });
+
             try {
                 #region command line parsing
 

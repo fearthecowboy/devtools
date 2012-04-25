@@ -10,6 +10,7 @@ namespace CoApp.Autopackage {
     using Toolkit.Exceptions;
     using Toolkit.Extensions;
     using Toolkit.Scripting.Languages.PropertySheet;
+    using Toolkit.Tasks;
 
     internal class PackageSource {
         internal CertificateReference Certificate;
@@ -64,9 +65,9 @@ namespace CoApp.Autopackage {
                 Certificate = new CertificateReference(SigningCertPath, SigningCertPassword);
             }
 
-            AutopackageMessages.Invoke.Verbose("Loaded certificate with private key {0}", Certificate.Location);
+            Event<Verbose>.Raise("Loaded certificate with private key {0}", Certificate.Location);
             if (Remember) {
-                AutopackageMessages.Invoke.Verbose("Storing certificate details in the registry.");
+                Event<Verbose>.Raise("Storing certificate details in the registry.");
                 Certificate.RememberPassword();
                 CertificateReference.Default = Certificate;
             }
@@ -146,7 +147,7 @@ namespace CoApp.Autopackage {
                     return collection.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries).Select(each => each.Trim());
                 }
 
-                AutopackageMessages.Invoke.Error(MessageCode.UnknownFileList, null, "Reference to unknown file list '{0}'", collectionname);
+                Event<Error>.Raise(MessageCode.UnknownFileList, null, "Reference to unknown file list '{0}'", collectionname);
             } else {
                 var list = FileList.GetFileList(collectionname, FileRules);
                 return list.FileEntries.Select(each => new {
@@ -221,7 +222,7 @@ namespace CoApp.Autopackage {
 
             // check for any roles...
             if (!AllRoles.Any()) {
-                AutopackageMessages.Invoke.Error(
+                Event<Error>.Raise(
                     MessageCode.ZeroPackageRolesDefined, null,
                     "No package roles are defined. Must have at least one of {{ application, assembly, service, web-application, developer-library, source-code, driver }} rules defined.");
             }

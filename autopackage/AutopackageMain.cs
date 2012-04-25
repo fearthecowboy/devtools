@@ -79,22 +79,11 @@ namespace CoApp.Autopackage {
 
     }
 
-    public class AutopackageMessages : MessageHandlers<AutopackageMessages> {
-        #region Delegates
-
-        public delegate void ErrorHandler(MessageCode code, SourceLocation sourceLocation, string message, params object[] args);
-        public delegate void WarningHandler(MessageCode code, SourceLocation sourceLocation, string message, params object[] args);
-        public delegate void MessageHandler(MessageCode code, SourceLocation sourceLocation, string message, params object[] args);
-        public delegate void VerboseHandler(string message, params object[] args);
-
-        #endregion
-
-        public ErrorHandler Error;
-        public WarningHandler Warning;
-        public MessageHandler Message;
-        public VerboseHandler Verbose;
-    }
-
+    public delegate void Error(MessageCode code, SourceLocation sourceLocation, string message, params object[] args);
+    public delegate void Warning(MessageCode code, SourceLocation sourceLocation, string message, params object[] args);
+    public delegate void Message(MessageCode code, SourceLocation sourceLocation, string message, params object[] args);
+    public delegate void Verbose(string message, params object[] args);
+    
     public class AutopackageException : CoAppException {
     }
 
@@ -109,14 +98,7 @@ namespace CoApp.Autopackage {
         private readonly List<string> _warnings = new List<string>();
         private readonly List<string> _msgs = new List<string>();
 
-        internal static EasyPackageManager _easyPackageManager = new EasyPackageManager((uri, location, progress) => {
-            /*progress*/
-            "Downloading {0}".format(uri.UrlDecode()).PrintProgressBar(progress);
-
-        }, (uri, location) => {
-            /*completed*/
-            Console.WriteLine();
-        });
+        internal static EasyPackageManager _easyPackageManager = new EasyPackageManager();
         
         // command line stuff
         
@@ -159,6 +141,13 @@ namespace CoApp.Autopackage {
         /// </returns>
         protected override int Main(IEnumerable<string> args) {
             // force temporary folder to be where we want it to be.
+            CurrentTask.Events += new DownloadProgress((remoteLocation, location, progress) => {
+                "Downloading {0}".format(remoteLocation.UrlDecode()).PrintProgressBar(progress);
+            });
+
+            CurrentTask.Events += new DownloadCompleted((remoteLocation, locallocation) => {
+                Console.WriteLine();
+            });
 
             _easyPackageManager.AddSessionFeed(Environment.CurrentDirectory).Wait();
 
@@ -227,17 +216,16 @@ namespace CoApp.Autopackage {
                 }
 
                 // set up the stuff to catch our errors and warnings
-                new AutopackageMessages {
-                    Error = HandleErrors,
-                    Warning = HandleWarnings,
-                    Verbose = Verbose,
-                    Message = HandleMessage,
-                }.Register();
+
+                CurrentTask.Events += new Error(HandleErrors);
+                CurrentTask.Events += new Warning(HandleWarnings);
+                CurrentTask.Events += new Verbose(Verbose);
+                CurrentTask.Events += new Message(HandleMessage);
 
                 // find all the command line tools that we're gonna need.
                 Tools.LocateCommandlineTools();
 
-                if (parameters.Count() < 1) {
+                if (!parameters.Any()) {
                     throw new ConsoleException("Missing .autopkg script.");
                     // throw new ConsoleException(Resources.NoConfigFileLoaded);
                 }

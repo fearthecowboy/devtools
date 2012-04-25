@@ -14,6 +14,7 @@ namespace CoApp.Autopackage {
     using Toolkit.Engine.Model.Atom;
     using Toolkit.Exceptions;
     using Toolkit.Extensions;
+    using Toolkit.Tasks;
 
     internal class WixDocument {
         private dynamic wix;
@@ -441,7 +442,7 @@ namespace CoApp.Autopackage {
                 n.Name = wixNS + n.Name.LocalName;
             }
 
-            AutopackageMessages.Invoke.Verbose("Generated WixFile\r\n\r\n{0}",wixXml.ToString());
+            Event<Verbose>.Raise("Generated WixFile\r\n\r\n{0}",wixXml.ToString());
 
             // file names
             var wixfile = (Path.GetFileNameWithoutExtension(msiFilename) + ".wxs").GetFileInTempFolder();
@@ -453,21 +454,21 @@ namespace CoApp.Autopackage {
             wixXml.Save(wixfile);
 
             // Compile the Wix File
-            AutopackageMessages.Invoke.Verbose("==> Compiling Generated Wix Package.");
+            Event<Verbose>.Raise("==> Compiling Generated Wix Package.");
             var rc = Tools.WixCompiler.Exec(@"-nologo -sw1075 -out ""{0}"" ""{1}"" ", wixobj, wixfile);
             if (rc != 0) {
-                AutopackageMessages.Invoke.Error(MessageCode.WixCompilerError, null, "{0}\r\n{1}", Tools.WixCompiler.StandardOut, Tools.WixCompiler.StandardError);
+                Event<Error>.Raise(MessageCode.WixCompilerError, null, "{0}\r\n{1}", Tools.WixCompiler.StandardOut, Tools.WixCompiler.StandardError);
                 return null;
             }
 
-            AutopackageMessages.Invoke.Verbose("==> Linking Wix object files into MSI.");
+            Event<Verbose>.Raise("==> Linking Wix object files into MSI.");
 
             rc = Tools.WixLinker.Exec(@"-nologo -sw1076  -out ""{0}"" ""{1}""", msiFilename, wixobj);
             if (rc != 0) {
-                AutopackageMessages.Invoke.Error(MessageCode.WixLinkerError, null, "{0}\r\n{1}", Tools.WixLinker.StandardOut, Tools.WixLinker.StandardError);
+                Event<Error>.Raise(MessageCode.WixLinkerError, null, "{0}\r\n{1}", Tools.WixLinker.StandardOut, Tools.WixLinker.StandardError);
                 return null;
             }
-            AutopackageMessages.Invoke.Verbose("MSI Generated [{0}].", msiFilename);
+            Event<Verbose>.Raise("MSI Generated [{0}].", msiFilename);
             return msiFilename;
 
         }

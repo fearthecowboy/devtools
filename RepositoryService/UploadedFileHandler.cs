@@ -51,6 +51,14 @@ namespace CoApp.RepositoryService {
                     Directory.CreateDirectory(_packageStorageFolder);
                 }
             }
+
+            CurrentTask.Events += new DownloadProgress((remoteLocation, location, progress) => {
+                "Downloading {0}".format(remoteLocation.UrlDecode()).PrintProgressBar(progress);
+            });
+
+            CurrentTask.Events += new DownloadCompleted((remoteLocation, locallocation) => {
+                Console.WriteLine();                    
+            });
         }
 
         /*
@@ -66,14 +74,7 @@ namespace CoApp.RepositoryService {
         }
         */
 
-        private static EasyPackageManager _easyPackageManager = new EasyPackageManager((uri, location, progress) => {
-            /*progress*/
-            "Downloading {0}".format(uri.UrlDecode()).PrintProgressBar(progress);
-
-        }, (uri, location) => {
-            /*completed*/
-            Console.WriteLine();
-        });
+        private static EasyPackageManager _easyPackageManager = new EasyPackageManager();
 
         public override Task Put(HttpListenerResponse response, string relativePath, byte[] data) {
             if( data.Length < 1 ) {

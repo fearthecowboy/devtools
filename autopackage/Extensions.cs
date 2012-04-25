@@ -14,6 +14,7 @@ namespace CoApp.Autopackage {
     using Toolkit.Extensions;
     using Toolkit.Network;
     using Toolkit.Scripting.Languages.PropertySheet;
+    using Toolkit.Tasks;
     using Toolkit.Text.Sgml;
 
     public static class Extensions {
@@ -110,7 +111,7 @@ namespace CoApp.Autopackage {
                 if(uri.IsFile) {
                     localFile = uri.AbsoluteUri.CanonicalizePath();
                     if( !File.Exists(localFile)) {
-                        AutopackageMessages.Invoke.Warning(MessageCode.BadLicenseLocation, null, "Unable to retrieve the license for {0} from {1}", value,
+                        Event<Warning>.Raise(MessageCode.BadLicenseLocation, null, "Unable to retrieve the license for {0} from {1}", value,
                             localFile);
                         return null;
                     }
@@ -119,7 +120,7 @@ namespace CoApp.Autopackage {
                     rf.Get();
 
                     if( !File.Exists(localFile)) {
-                        AutopackageMessages.Invoke.Warning(MessageCode.BadLicenseLocation, null, "Unable to retrieve the license for {0} from {1}", value,
+                        Event<Warning>.Raise(MessageCode.BadLicenseLocation, null, "Unable to retrieve the license for {0} from {1}", value,
                             uri.AbsolutePath);
                         return null;
                     }

@@ -21,6 +21,7 @@ namespace CoApp.Autopackage {
     using Toolkit.Engine.Model;
     using Toolkit.Extensions;
     using Toolkit.Scripting.Languages.PropertySheet;
+    using Toolkit.Tasks;
     using Toolkit.Win32;
 
     public class PackageAssembly {
@@ -124,7 +125,7 @@ namespace CoApp.Autopackage {
                     _version = value;
                 }
                 else {
-                    AutopackageMessages.Invoke.Error(MessageCode.AssemblyVersionDoesNotMatch, Rule.SourceLocation, "Assembly '{0}' has an implicit version({1}), can't set to ({2}).", Name, Version, value);
+                    Event<Error>.Raise(MessageCode.AssemblyVersionDoesNotMatch, Rule.SourceLocation, "Assembly '{0}' has an implicit version({1}), can't set to ({2}).", Name, Version, value);
                 }
             }
             get {
@@ -148,7 +149,7 @@ namespace CoApp.Autopackage {
 
                     /*
                     if (IsManaged && SourceFiles.Count() > 1) {
-                        AutopackageMessages.Invoke.Error(
+                        Event<Error>.Raise(
                             MessageCode.ManagedAssemblyWithMoreThanOneFile, Rule.SourceLocation, "Managed assembly '{0}' with more than one file in include",
                             Name);
                         _isErrorFree = false;

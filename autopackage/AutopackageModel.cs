@@ -22,6 +22,7 @@ namespace CoApp.Autopackage {
     using System.Xml.Serialization;
     using Developer.Toolkit.Publishing;
     using Packaging.Client;
+    using Packaging.Common;
     using Packaging.Common.Model;
     using Packaging.Common.Model.Atom;
     using Properties;
@@ -482,59 +483,62 @@ namespace CoApp.Autopackage {
         }
 
         internal void ProcessBasicPackageInformation() {
+
             // -----------------------------------------------------------------------------------------------------------------------------------
             // New Step: Validate the basic information of this package
-            Name = Source.PackageRules.GetProperty("name").Value;
+            string pkgName = Source.PackageRules.GetProperty("name").Value;
+            Architecture pkgArchitecture = Architecture.Auto; 
+            FourPartVersion pkgVersion = Source.PackageRules.GetPropertyValue("version");
+            FlavorString pkgFlavor = Source.PackageRules.GetPropertyValue("flavor");
+            string pkgPublicKeyToken = Source.Certificate.PublicKeyToken;
 
-            if (string.IsNullOrEmpty(Name)) {
+            if (string.IsNullOrEmpty(pkgName)) {
                 Event<Error>.Raise(
                     MessageCode.MissingPackageName, Source.PackageRules.Last().SourceLocation, "Missing property 'name' in 'package' rule.");
             }
 
-            Version = Source.PackageRules.GetPropertyValue("version");
-
-            if (Version == 0) {
+            if (pkgVersion == 0) {
                 // try to figure out package version from binaries.
                 // check assemblies first
                 foreach (var assembly in Assemblies) {
-                    Version = assembly.Version;
-                    if (Version == 0) {
+                    pkgVersion = assembly.Version;
+                    if (pkgVersion == 0) {
                         Event<Error>.Raise(
                             MessageCode.AssemblyHasNoVersion, assembly.Rule.SourceLocation, "Assembly '{0}/{1}' doesn't have a version.", assembly.Name, assembly.Culture ?? "");
                     } else {
                         Event<Warning>.Raise(
                             MessageCode.AssumingVersionFromAssembly, Assemblies.First().Rule.SourceLocation,
-                            "Package Version not specified, assuming version '{0}' from first assembly", Version.ToString());
+                            "Package Version not specified, assuming version '{0}' from first assembly", pkgVersion.ToString());
 
-                        if (Architecture == Architecture.Auto || Architecture == Architecture.Unknown) {
+                        if (pkgArchitecture == Architecture.Auto || pkgArchitecture == Architecture.Unknown) {
                             // while we're here, let's grab this as the architecture.
-                            Architecture = assembly.Architecture;
+                            pkgArchitecture = assembly.Architecture;
                         }
 
                         break;
                     }
                 }
-                if (Version == 0) {
+                if (pkgVersion == 0) {
                     // check application next 
                     foreach (var file in DestinationDirectoryFiles) {
                         var binary = Binary.Load(file.SourcePath).Result;
 
                         if (binary.IsPEFile) {
-                            Version = binary.FileVersion;
+                            pkgVersion = binary.FileVersion;
 
                             Event<Warning>.Raise(
                                 MessageCode.AssumingVersionFromApplicationFile, null,
-                                "Package Version not specified, assuming version '{0}' from application file '{1}'", Version.ToString(),
+                                "Package Version not specified, assuming version '{0}' from application file '{1}'", pkgVersion.ToString(),
                                 file.SourcePath);
 
-                            if (Architecture == Architecture.Auto || Architecture == Architecture.Unknown) {
+                            if (pkgArchitecture == Architecture.Auto || pkgArchitecture == Architecture.Unknown) {
                                 // while we're here, let's grab this as the architecture.
                                 if (binary.IsAnyCpu) {
-                                    Architecture = Architecture.Any;
+                                    pkgArchitecture = Architecture.Any;
                                 } else if (binary.Is64Bit) {
-                                    Architecture = Architecture.x64;
+                                    pkgArchitecture = Architecture.x64;
                                 } else {
-                                    Architecture = Architecture.x86;
+                                    pkgArchitecture = Architecture.x86;
                                 }
                             }
 
@@ -543,7 +547,7 @@ namespace CoApp.Autopackage {
                     }
                 }
 
-                if (Version == 0) {
+                if (pkgVersion == 0) {
                     Event<Error>.Raise(MessageCode.UnableToDeterminePackageVersion, null, "Unable to determine package version.");
                     return; // fast fail.
                 }
@@ -552,11 +556,11 @@ namespace CoApp.Autopackage {
 
             // set any assemblies without version numbers to package version
             foreach (var assembly in Assemblies.Where(each => each.Version == 0L)) {
-                assembly.Version = Version;
+                assembly.Version = pkgVersion;
             }
 
             // make sure that all the assemblies have the same version as the package
-            foreach (var assembly in Assemblies.Where(each => each.Version != Version)) {
+            foreach (var assembly in Assemblies.Where(each => each.Version != pkgVersion)) {
                 Event<Error>.Raise(MessageCode.AssemblyVersionDoesNotMatch, null, "Assembly '{0}' has different version ({1}) that this package ({2}) .", assembly.Name, assembly.Version, Version);
             }
 
@@ -571,22 +575,20 @@ namespace CoApp.Autopackage {
                 // fail fast, this is pointless.
                 return;
             }
-
+            
             var arch = Source.PackageRules.GetPropertyValue("arch") as string;
             arch = arch ?? Source.PackageRules.GetPropertyValue("architecture") as string;
-            if ((Architecture == Architecture.Auto || Architecture == Architecture.Unknown )&& arch != null) {
-                Architecture = arch;
+            if ((pkgArchitecture == Architecture.Auto || pkgArchitecture == Architecture.Unknown) && arch != null) {
+                pkgArchitecture = arch;
             }
 
             // is it still not set?
-            if (Architecture == Architecture.Auto || Architecture == Architecture.Unknown) {
+            if (pkgArchitecture == Architecture.Auto || pkgArchitecture == Architecture.Unknown) {
                 // figure it out from what's going in the package.
                 Event<Error>.Raise(MessageCode.UnableToDeterminePackageArchitecture, null, "Unable to determine package architecture.");
             }
 
-            if (string.IsNullOrEmpty(PublicKeyToken)) {
-                PublicKeyToken = Source.Certificate.PublicKeyToken;
-            }
+           
 
             var locations = Source.PackageRules.GetPropertyValues("location").Union(Source.PackageRules.GetPropertyValues("locations"));
             if( !locations.IsNullOrEmpty()) {
@@ -612,6 +614,7 @@ namespace CoApp.Autopackage {
                     };
                 }
             }
+            CanonicalName = string.Format("coapp:{0}{1}-{2}-{3}-{4}", pkgName, pkgFlavor, pkgVersion, pkgArchitecture, pkgPublicKeyToken);
         }
 
         internal void UpdateApplicationManifests() {

@@ -169,7 +169,7 @@ namespace CoApp.Autopackage {
                     using (var srcStream = new MemoryStream(Convert.FromBase64String(Model.ChildIcons[k]))) {
                         AddIcon(k, Image.FromStream(srcStream));
                     }
-                } catch (Exception e) {
+                } catch  {
                     // Console.WriteLine("{0} --- {1}", e.Message,e.StackTrace);
                 }
             }

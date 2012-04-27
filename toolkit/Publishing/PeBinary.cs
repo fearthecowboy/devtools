@@ -163,7 +163,7 @@ namespace CoApp.Developer.Toolkit.Publishing {
                             Logger.Warning("File {0} failed to load win32 resources", filename);
                         }
                     }
-                } catch (Exception e) {
+                } catch (Exception) {
                     Logger.Warning("File {0} doesn't appear to have win32 resources", filename);
                 }
 

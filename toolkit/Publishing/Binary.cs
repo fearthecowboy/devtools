@@ -765,7 +765,7 @@ namespace CoApp.Developer.Toolkit.Publishing {
 
                 try {
                     resinfo.Load(WorkingCopy);
-                } catch (Exception e) {
+                } catch  {
                     // even though nothing was loaded, let's keep the blank resources object around.
                     _modifiedResources = false;
                     NativeResources.Value = resinfo;
@@ -792,7 +792,7 @@ namespace CoApp.Developer.Toolkit.Publishing {
                     _fileDescription = _fileDescription ?? TryGetVersionString(versionStringTable, "FileDescription");
                     _bugTracker = _bugTracker ?? TryGetVersionString(versionStringTable, "BugTracker");
                     _productVersion = _productVersion == 0L ? (FourPartVersion)TryGetVersionString(versionStringTable, "ProductVersion") : _productVersion;
-                } catch (Exception e) {
+                } catch {
                     // no version resources it seems.
                 }
                 NativeResources.Value = resinfo;

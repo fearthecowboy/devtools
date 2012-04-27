@@ -1076,7 +1076,7 @@ REM ===================================================================
                             Exec(cmd.Value);
                         }
                     }
-                    catch (Exception e) {
+                    catch  {
                         //ignoring any failures from clean command.
                     }
                     File.Delete(Path.Combine(Environment.CurrentDirectory, "trace[{0}].xml".format(build.Name)));

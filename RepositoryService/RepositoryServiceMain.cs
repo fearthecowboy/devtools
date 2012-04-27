@@ -174,7 +174,7 @@ namespace CoApp.RepositoryService {
                     
                 }
 
-                listener.Stop();
+                // listener.Stop();
             } catch(Exception e) {
                 Listener.HandleException(e);
                 CancellationTokenSource.Cancel();

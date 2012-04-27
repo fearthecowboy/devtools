@@ -1,15 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿//-----------------------------------------------------------------------
+// <copyright company="CoApp Project">
+//     Copyright (c) 2010-2012 Garrett Serack and CoApp Contributors. 
+//     Contributors can be discovered using the 'git log' command.
+//     All rights reserved.
+// </copyright>
+// <license>
+//     The software is licensed under the Apache 2.0 License (the "License")
+//     You may not use the software except in compliance with the License. 
+// </license>
+//-----------------------------------------------------------------------
 
 namespace CoApp.Autopackage {
+    using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using Developer.Toolkit.Publishing;
-    using Toolkit.Engine.Client;
+    using Developer.Toolkit.Scripting.Languages.PropertySheet;
+    using Packaging.Client;
+    using Properties;
     using Toolkit.Exceptions;
     using Toolkit.Extensions;
-    using Toolkit.Scripting.Languages.PropertySheet;
     using Toolkit.Tasks;
 
     internal class PackageSource {
@@ -20,7 +31,7 @@ namespace CoApp.Autopackage {
 
         internal PackageManager PackageManager;
         // collection of propertysheets
-        internal  PropertySheet[] PropertySheets;
+        internal PropertySheet[] PropertySheets;
 
         // all the different sets of rules 
         internal Rule[] AllRules;
@@ -53,7 +64,6 @@ namespace CoApp.Autopackage {
         }
 
         internal void FindCertificate() {
-
             if (string.IsNullOrEmpty(SigningCertPath)) {
                 Certificate = CertificateReference.Default;
                 if (Certificate == null) {
@@ -87,51 +97,49 @@ namespace CoApp.Autopackage {
 
         internal Dictionary<string, string> MacroValues = new Dictionary<string, string>();
 
-        internal string PostprocessValue( string value ) {
-            if( !string.IsNullOrEmpty(value) && value.Contains("[]")) {
+        internal string PostprocessValue(string value) {
+            if (!string.IsNullOrEmpty(value) && value.Contains("[]")) {
                 return value.Replace("[]", "");
             }
             return value;
         }
 
         internal string GetMacroValue(string valuename) {
-            if( valuename == "DEFAULTLAMBDAVALUE") {
+            if (valuename == "DEFAULTLAMBDAVALUE") {
                 return "${packagedir}\\${each.Path}";
             }
 
             string defaultValue = null;
 
             if (valuename.Contains("??")) {
-                var prts = valuename.Split(new[] { '?' }, StringSplitOptions.RemoveEmptyEntries);
+                var prts = valuename.Split(new[] {'?'}, StringSplitOptions.RemoveEmptyEntries);
                 defaultValue = prts.Length > 1 ? prts[1].Trim() : string.Empty;
                 valuename = prts[0];
             }
 
             var parts = valuename.Split('.');
             if (parts.Length > 0) {
-
-                if( parts.Length == 3) {
+                if (parts.Length == 3) {
                     var result = AllRules.GetRulesByName(parts[0]).GetRulesByParameter(parts[1]).GetPropertyValue(parts[2]);
-                    if( result != null ) {
+                    if (result != null) {
                         return result;
                     }
                 }
 
-                if( parts.Length == 2) {
+                if (parts.Length == 2) {
                     var result = AllRules.GetRulesByName(parts[0]).GetPropertyValue(parts[1]);
-                    if( result != null ) {
+                    if (result != null) {
                         return result;
                     }
                 }
 
                 // still not found?
-                if( parts[0].Equals("package", StringComparison.InvariantCultureIgnoreCase) ) {
+                if (parts[0].Equals("package", StringComparison.InvariantCultureIgnoreCase)) {
                     var result = this.SimpleEval(valuename.Substring(8));
                     if (result != null && !string.IsNullOrEmpty(result.ToString())) {
                         return result.ToString();
                     }
                 }
-
             }
 
             return DefineRules.GetPropertyValue(valuename) ?? (MacroValues.ContainsKey(valuename.ToLower()) ? MacroValues[valuename.ToLower()] : Environment.GetEnvironmentVariable(valuename)) ?? defaultValue;
@@ -141,9 +149,9 @@ namespace CoApp.Autopackage {
             // we use this to pick up file collections.
             var fileRule = FileRules.FirstOrDefault(each => each.Parameter == collectionname);
 
-            if( fileRule == null) {
+            if (fileRule == null) {
                 var collection = GetMacroValue(collectionname);
-                if( collection != null ) {
+                if (collection != null) {
                     return collection.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries).Select(each => each.Trim());
                 }
 
@@ -157,25 +165,25 @@ namespace CoApp.Autopackage {
                     NameWithoutExtension = Path.GetFileNameWithoutExtension(each.DestinationPath),
                 });
             }
-            
+
             return Enumerable.Empty<object>();
         }
 
         internal void LoadPropertySheets(string autopackageSourceFile) {
             //
-            var template = PropertySheet.Parse(Properties.Resources.template_autopkg, "autopkg-template");
+            var template = PropertySheet.Parse(Resources.template_autopkg, "autopkg-template");
 
             if (!File.Exists(autopackageSourceFile.GetFullPath())) {
                 throw new ConsoleException("Can not find autopackage file '{0}'", autopackageSourceFile.GetFullPath());
             }
-            
+
             var result = PropertySheet.Load(autopackageSourceFile);
             result.GetCollection += GetFileCollection;
             result.GetMacroValue += GetMacroValue;
             result.PostprocessProperty += PostprocessValue;
 
             PropertySheets = new[] {result, template};
-            
+
             // this is the master list of all the rules from all included sheets
             AllRules = PropertySheets.SelectMany(each => each.Rules).Reverse().ToArray();
 
@@ -227,7 +235,5 @@ namespace CoApp.Autopackage {
                     "No package roles are defined. Must have at least one of {{ application, assembly, service, web-application, developer-library, source-code, driver }} rules defined.");
             }
         }
-
-        
     }
 }

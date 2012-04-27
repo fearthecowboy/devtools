@@ -1,6 +1,8 @@
 ﻿//-----------------------------------------------------------------------
 // <copyright company="CoApp Project">
-//     Copyright (c) 2011 Garrett Serack . All rights reserved.
+//     Copyright (c) 2010-2012 Garrett Serack and CoApp Contributors. 
+//     Contributors can be discovered using the 'git log' command.
+//     All rights reserved.
 // </copyright>
 // <license>
 //     The software is licensed under the Apache 2.0 License (the "License")
@@ -8,19 +10,14 @@
 // </license>
 //-----------------------------------------------------------------------
 
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 namespace CoApp.Autopackage {
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using Developer.Toolkit.Publishing;
-    using Toolkit.Engine;
-    using Toolkit.Engine.Model;
+    using Developer.Toolkit.Scripting.Languages.PropertySheet;
+    using Toolkit.Crypto;
     using Toolkit.Extensions;
-    using Toolkit.Scripting.Languages.PropertySheet;
     using Toolkit.Tasks;
     using Toolkit.Win32;
 
@@ -28,20 +25,36 @@ namespace CoApp.Autopackage {
         public string Name { get; set; }
 
         private Binary _firstPE;
-        internal Binary FirstPEBinary { get { return _firstPE ?? (_firstPE = PEFiles.FirstOrDefault()); } }
+
+        internal Binary FirstPEBinary {
+            get {
+                return _firstPE ?? (_firstPE = PEFiles.FirstOrDefault());
+            }
+        }
 
         private IEnumerable<Binary> _peFiles;
-        internal IEnumerable<Binary> PEFiles { get { return _peFiles ?? (_peFiles = BinaryFiles.Where(each => each.IsPEFile)); } }
+
+        internal IEnumerable<Binary> PEFiles {
+            get {
+                return _peFiles ?? (_peFiles = BinaryFiles.Where(each => each.IsPEFile));
+            }
+        }
 
         private IEnumerable<Binary> _binaryFiles;
-        private IEnumerable<Binary> BinaryFiles { get { return _binaryFiles ?? (_binaryFiles = SourceFiles.Select(each => Binary.Load(each).Result)); }}
+
+        private IEnumerable<Binary> BinaryFiles {
+            get {
+                return _binaryFiles ?? (_binaryFiles = SourceFiles.Select(each => Binary.Load(each).Result));
+            }
+        }
 
         private string _culture;
+
         public string Culture {
             get {
-                if( _culture == null) {
+                if (_culture == null) {
                     // get culture from file
-                    if(IsManaged) {
+                    if (IsManaged) {
                         _culture = FirstPEBinary.AssemblyCulture;
                     }
                     if (_culture == null && Rule.HasProperty("culture") && Rule["culture"].HasValue) {
@@ -49,25 +62,28 @@ namespace CoApp.Autopackage {
                     }
                 }
                 return string.IsNullOrEmpty(_culture) ? null : _culture;
-            } set {
+            }
+            set {
                 _culture = value;
             }
         }
 
         private Architecture _architecture;
-        public Architecture Architecture { get {
-            if( _architecture == Architecture.Unknown) {
-                if (FirstPEBinary.Is64Bit) {
-                    _architecture = Architecture.x64;
-                } else if (FirstPEBinary.IsAnyCpu) {
-                    _architecture= Architecture.Any;
+
+        public Architecture Architecture {
+            get {
+                if (_architecture == Architecture.Unknown) {
+                    if (FirstPEBinary.Is64Bit) {
+                        _architecture = Architecture.x64;
+                    } else if (FirstPEBinary.IsAnyCpu) {
+                        _architecture = Architecture.Any;
+                    } else {
+                        _architecture = Architecture.x86;
+                    }
                 }
-                else {
-                    _architecture = Architecture.x86;
-                }
+                return _architecture;
             }
-            return _architecture;
-        }}
+        }
 
         public Rule Rule { get; set; }
         private bool? _isManaged;
@@ -80,20 +96,27 @@ namespace CoApp.Autopackage {
 
         private readonly IEnumerable<FileEntry> _files;
 
-        internal IEnumerable<FileEntry>  Files {get { return _files; } }
-
-        internal IEnumerable<string>  SourceFiles {
-            get { return _files.Select(each => each.SourcePath); }
+        internal IEnumerable<FileEntry> Files {
+            get {
+                return _files;
+            }
         }
+
+        internal IEnumerable<string> SourceFiles {
+            get {
+                return _files.Select(each => each.SourcePath);
+            }
+        }
+
         public bool FilesAreSigned {
             get {
-                return PEFiles.All(each => Toolkit.Crypto.Verifier.HasValidSignature(each.Filename));
+                return PEFiles.All(each => Verifier.HasValidSignature(each.Filename));
             }
         }
 
         public bool IsManaged {
             get {
-                if( _isPolicy == true || _isNative == true) {
+                if (_isPolicy == true || _isNative == true) {
                     return false;
                 }
                 // if none of them are not managed. 
@@ -111,10 +134,15 @@ namespace CoApp.Autopackage {
         }
 
         public bool IsNativePolicy {
-            get { return _isPolicy == true; }
-            set { _isPolicy = value; }
+            get {
+                return _isPolicy == true;
+            }
+            set {
+                _isPolicy = value;
+            }
         }
-        public FourPartVersion Version { 
+
+        public FourPartVersion Version {
             set {
                 // you can set the version number, only if the version number would otherwise be 0
                 if (Version == value) {
@@ -123,16 +151,15 @@ namespace CoApp.Autopackage {
 
                 if (Version == 0L) {
                     _version = value;
-                }
-                else {
+                } else {
                     Event<Error>.Raise(MessageCode.AssemblyVersionDoesNotMatch, Rule.SourceLocation, "Assembly '{0}' has an implicit version({1}), can't set to ({2}).", Name, Version, value);
                 }
             }
             get {
-                if( _version == 0 ) {
+                if (_version == 0) {
                     _version = FirstPEBinary.AssemblyVersion;
                     //if (_version == 0) {
-                      //  _version = FirstPEBinary.AssemblyVersion;
+                    //  _version = FirstPEBinary.AssemblyVersion;
                     //}
                     if (_version == 0) {
                         _version = FirstPEBinary.FileVersion;
@@ -141,7 +168,7 @@ namespace CoApp.Autopackage {
                 return _version;
             }
         }
-        
+
         public bool IsErrorFree {
             get {
                 if (_isErrorFree == null) {
@@ -156,8 +183,6 @@ namespace CoApp.Autopackage {
                     }
                      // managed assemblies need to support more than one file :)
                      * */
-
-                   
                 }
                 return _isErrorFree.Value;
             }
@@ -169,7 +194,6 @@ namespace CoApp.Autopackage {
             _files = new FileEntry(filename, Path.GetFileName(filename)).SingleItemAsEnumerable();
         } */
 
-        
         public PackageAssembly(string assemblyName, Rule rule, IEnumerable<string> files) {
             Name = assemblyName;
             Rule = rule;
@@ -198,25 +222,25 @@ namespace CoApp.Autopackage {
         }
 
         private NativeManifest _assemblyManifest;
+
         public string AssemblyManifest {
             get {
                 if (_assemblyManifest == null) {
-                    _assemblyManifest  = new NativeManifest(null) {
+                    _assemblyManifest = new NativeManifest(null) {
                         AssemblyName = Name,
                         AssemblyArchitecture = Architecture,
-                        AssemblyLanguage =  Culture ?? "*",
+                        AssemblyLanguage = Culture ?? "*",
                         AssemblyVersion = Version,
                         AssemblyPublicKeyToken = PublicKeyToken,
                         AssemblyType = AssemblyType.win32
                     };
 
-                    foreach( var file in _files) {
+                    foreach (var file in _files) {
                         _assemblyManifest.AddFile(file.DestinationPath, file.SourcePath.GetFileSHA1());
                     }
                 }
                 return _assemblyManifest.ToString();
             }
         }
-
     }
 }

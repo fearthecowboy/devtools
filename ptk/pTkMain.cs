@@ -1,6 +1,8 @@
 ﻿//-----------------------------------------------------------------------
 // <copyright company="CoApp Project">
-//     Copyright (c) 2011 Garrett Serack. All rights reserved.
+//     Copyright (c) 2010-2012 Garrett Serack and CoApp Contributors. 
+//     Contributors can be discovered using the 'git log' command.
+//     All rights reserved.
 // </copyright>
 // <license>
 //     The software is licensed under the Apache 2.0 License (the "License")
@@ -8,19 +10,18 @@
 // </license>
 //-----------------------------------------------------------------------
 
+
 namespace CoApp.Ptk {
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Reflection;
-    using Toolkit.Configuration;
-    using Toolkit.Engine;
-    using Toolkit.Engine.Client;
+    using Developer.Toolkit.Exceptions;
+    using Developer.Toolkit.Scripting.Languages.PropertySheet;
+    using Packaging.Client;
     using Toolkit.Exceptions;
     using Toolkit.Extensions;
-    using Toolkit.Network;
-    using Toolkit.Scripting.Languages.PropertySheet;
     using Toolkit.Utility;
 
     internal class pTkMain {
@@ -78,7 +79,7 @@ pTK [options] action [buildconfiguration...]
 //                                build data 
 
 
-        private EasyPackageManager _easy = new EasyPackageManager();
+        private PackageManager _easy = new PackageManager();
 
 
         /// <summary>

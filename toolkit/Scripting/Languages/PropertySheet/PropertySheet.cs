@@ -1,6 +1,8 @@
 ﻿//-----------------------------------------------------------------------
 // <copyright company="CoApp Project">
-//     Copyright (c) 2011 Garrett Serack. All rights reserved.
+//     Copyright (c) 2010-2012 Garrett Serack and CoApp Contributors. 
+//     Contributors can be discovered using the 'git log' command.
+//     All rights reserved.
 // </copyright>
 // <license>
 //     The software is licensed under the Apache 2.0 License (the "License")
@@ -8,15 +10,15 @@
 // </license>
 //-----------------------------------------------------------------------
 
-namespace CoApp.Toolkit.Scripting.Languages.PropertySheet {
+
+namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
     using System;
     using System.Collections.Generic;
     using System.Dynamic;
     using System.IO;
     using System.Linq;
-    using System.Text;
     using System.Text.RegularExpressions;
-    using Extensions;
+    using CoApp.Toolkit.Extensions;
 
     public class PropertySheet : DynamicObject {
         private static readonly Regex Macro = new Regex(@"(\$\{(.*?)\})");

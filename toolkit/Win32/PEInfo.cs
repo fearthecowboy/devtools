@@ -21,11 +21,11 @@ namespace CoApp.Toolkit.Win32 {
     using System.Diagnostics;
     using System.IO;
     using System.Reflection;
-    using Collections;
+    using Developer.Toolkit.Collections;
+    using Developer.Toolkit.Scripting.Languages.CSV;
     using Exceptions;
     using Extensions;
     using Logging;
-    using Scripting.Languages.CSV;
     using Utility;
 
     public class PEInfo {

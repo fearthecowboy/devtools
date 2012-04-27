@@ -1,12 +1,15 @@
 ﻿//-----------------------------------------------------------------------
 // <copyright company="CoApp Project">
-//     Copyright (c) 2011 Garrett Serack . All rights reserved.
+//     Copyright (c) 2010-2012 Garrett Serack and CoApp Contributors. 
+//     Contributors can be discovered using the 'git log' command.
+//     All rights reserved.
 // </copyright>
 // <license>
 //     The software is licensed under the Apache 2.0 License (the "License")
 //     You may not use the software except in compliance with the License. 
 // </license>
 //-----------------------------------------------------------------------
+
 
 namespace CoApp.RepositoryService {
     using System;
@@ -17,12 +20,8 @@ namespace CoApp.RepositoryService {
     using Properties;
     using Toolkit.Configuration;
     using Toolkit.Console;
-    using Toolkit.Engine;
-    using Toolkit.Engine.Client;
-    using Toolkit.Exceptions;
     using Toolkit.Extensions;
     using Toolkit.Logging;
-    using Toolkit.Network;
 
     public class RepositoryServiceMain  : AsyncConsoleProgram {
         private static bool _verbose = false;

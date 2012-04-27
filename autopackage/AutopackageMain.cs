@@ -1,8 +1,15 @@
 ﻿//-----------------------------------------------------------------------
 // <copyright company="CoApp Project">
-//     Copyright (c) 2011 Garrett Serack, Eric Schultz. All rights reserved.
+//     Copyright (c) 2010-2012 Garrett Serack and CoApp Contributors. 
+//     Contributors can be discovered using the 'git log' command.
+//     All rights reserved.
 // </copyright>
+// <license>
+//     The software is licensed under the Apache 2.0 License (the "License")
+//     You may not use the software except in compliance with the License. 
+// </license>
 //-----------------------------------------------------------------------
+
 
 namespace CoApp.Autopackage {
     using System;
@@ -11,81 +18,21 @@ namespace CoApp.Autopackage {
     using System.Linq;
     using System.Resources;
     using System.Text;
-    using System.Xml.Linq;
     using Developer.Toolkit.Publishing;
+    using Developer.Toolkit.Scripting.Languages.PropertySheet;
+    using Packaging.Client;
+    using Packaging.Common.Model.Atom;
     using Properties;
     using Toolkit.Console;
-    using Toolkit.Crypto;
-    using Toolkit.DynamicXml;
-    using Toolkit.Engine;
-    using Toolkit.Engine.Client;
-    using Toolkit.Engine.Model.Atom;
     using Toolkit.Exceptions;
     using Toolkit.Extensions;
     using Toolkit.Logging;
-    using Toolkit.Network;
-    using Toolkit.Scripting.Languages.PropertySheet;
     using Toolkit.Tasks;
-    using Toolkit.Utility;
-    using Toolkit.Win32;
-
-    public enum MessageCode {
-        // severe unhandleable messages
-        Unknown = 100,
-
-        // Illogical errors
-        UnknownFileList = 200,
-        MultipleFileLists,
-        MultipleApplications,
-        MultipleAssemblyArchitectures,
-        MultipleAssemblyVersions,
-
-        // bad user supplied information
-        FileNotFound = 300,
-        CircularFileReference,
-        DependentFileListUnavailable,
-        IncludeFileReferenceMatchesZeroFiles,
-        ZeroPackageRolesDefined,
-        DuplicateAssemblyDefined,
-        FailedToFindRequiredPackage,
-        ManagedAssemblyWithMoreThanOneFile,
-        MissingPackageName,
-        AssemblyHasNoVersion,
-        UnableToDeterminePackageVersion,
-        UnableToDeterminePackageArchitecture,
-        UnknownCompositionRuleType,
-        MultiplePackagesMatched,
-        ManifestReferenceNotFound,
-        AssemblyVersionDoesNotMatch,
-        AssembliesMustBeSigned,
-        AssemblyHasNoName,
-
-        // warnings
-        WarningUnknown = 500,
-        TrimPathOptionInvalid,
-        AssumingVersionFromAssembly,
-        AssumingVersionFromApplicationFile,
-        BadIconReference,
-        NoIcon,
-        BadLicenseLocation,
-        BadDate,
-
-
-        // other stuff.
-        WixCompilerError = 600,
-        WixLinkerError,
-        AssemblyLinkerError,
-        SigningFailed, 
-
-    }
 
     public delegate void Error(MessageCode code, SourceLocation sourceLocation, string message, params object[] args);
     public delegate void Warning(MessageCode code, SourceLocation sourceLocation, string message, params object[] args);
     public delegate void Message(MessageCode code, SourceLocation sourceLocation, string message, params object[] args);
     public delegate void Verbose(string message, params object[] args);
-    
-    public class AutopackageException : CoAppException {
-    }
 
     /// <summary>
     ///   Main Program for command line coapp tool
@@ -98,7 +45,7 @@ namespace CoApp.Autopackage {
         private readonly List<string> _warnings = new List<string>();
         private readonly List<string> _msgs = new List<string>();
 
-        internal static EasyPackageManager _easyPackageManager = new EasyPackageManager();
+        internal static PackageManager PackageManager = new PackageManager();
         
         // command line stuff
         
@@ -149,7 +96,7 @@ namespace CoApp.Autopackage {
                 Console.WriteLine();
             });
 
-            _easyPackageManager.AddSessionFeed(Environment.CurrentDirectory).Wait();
+            PackageManager.AddSessionFeed(Environment.CurrentDirectory).Wait();
 
 
             var macrovals = new Dictionary<string, string>();
@@ -238,7 +185,7 @@ namespace CoApp.Autopackage {
                     using (var popd = new PushDirectory(Path.GetDirectoryName(file.GetFullPath()))) {
                         Binary.UnloadAndResetAll();
 
-                        _easyPackageManager.AddSessionFeed(Path.GetDirectoryName(file.GetFullPath())).Wait();
+                        PackageManager.AddSessionFeed(Path.GetDirectoryName(file.GetFullPath())).Wait();
 
                         PackageSource = new PackageSource(this);
                         foreach( var k in macrovals.Keys) {
@@ -377,7 +324,7 @@ namespace CoApp.Autopackage {
             // recognize the new package in case it is needed for another package.
             if (!string.IsNullOrEmpty(msiFile) && File.Exists(msiFile)) {
                 // Console.WriteLine("\r\n Recognizing: {0}", msiFile);
-                _easyPackageManager.RecognizeFile(msiFile).Wait();
+                PackageManager.RecognizeFile(msiFile).Wait();
             }
 
         }
@@ -464,17 +411,6 @@ namespace CoApp.Autopackage {
             Console.ReadLine();
 
             return 1;
-        }
-    }
-
-       public static class DictionaryExtension {
-        public static TValue AddOrSet<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value) where TValue : class {
-            if( dictionary.ContainsKey(key) ) {
-                dictionary[key] = value;
-            } else {
-                dictionary.Add(key, value);
-            }
-            return value;
         }
     }
 }

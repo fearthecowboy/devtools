@@ -1,13 +1,14 @@
 ﻿//-----------------------------------------------------------------------
 // <copyright company="CoApp Project">
-//     Copyright (c) 2011 Garrett Serack . All rights reserved.
+//     Copyright (c) 2010-2012 Garrett Serack and CoApp Contributors. 
+//     Contributors can be discovered using the 'git log' command.
+//     All rights reserved.
 // </copyright>
 // <license>
 //     The software is licensed under the Apache 2.0 License (the "License")
 //     You may not use the software except in compliance with the License. 
 // </license>
 //-----------------------------------------------------------------------
-
 namespace CoApp.Autopackage {
     using System;
     using System.Collections.Generic;
@@ -20,13 +21,11 @@ namespace CoApp.Autopackage {
     using System.Xml;
     using System.Xml.Serialization;
     using Developer.Toolkit.Publishing;
+    using Packaging.Client;
+    using Packaging.Common.Model;
+    using Packaging.Common.Model.Atom;
     using Properties;
     using Toolkit.Crypto;
-    using Toolkit.Engine;
-    using Toolkit.Engine.Client;
-    using Toolkit.Engine.Model;
-    using Toolkit.Engine.Model.Atom;
-    using Toolkit.Engine.Model.Roles;
     using Toolkit.Extensions;
     using Toolkit.Logging;
     using Toolkit.Tasks;
@@ -313,22 +312,22 @@ namespace CoApp.Autopackage {
 
             if( !Name.Equals("coapp.toolkit", StringComparison.CurrentCultureIgnoreCase) ) {
                 // don't auto-add the coapp.toolkit dependency for the toolkit itself.
-                var toolkitPackage = AutopackageMain._easyPackageManager.GetPackages("coapp.toolkit-*-any-1e373a58e25250cb", null, null, null, null, null, null, null, null, null, false).Result.OrderByDescending(each => each.Version).FirstOrDefault();
+                var toolkitPackage = AutopackageMain.PackageManager.GetPackages("coapp.toolkit-*-any-1e373a58e25250cb", null, null, null, null, null, null, null, null, null, false).Result.OrderByDescending(each => each.Version).FirstOrDefault();
                 
                 if( toolkitPackage != null ) {
-                    AutopackageMain._easyPackageManager.GetPackageDetails(toolkitPackage.CanonicalName).Wait();
+                    AutopackageMain.PackageManager.GetPackageDetails(toolkitPackage.CanonicalName).Wait();
                     //Console.WriteLine("Implict Package Dependency: {0} -> {1}", toolkitPackage.CanonicalName, toolkitPackage.ProductCode);
                     DependentPackages.Add(toolkitPackage);    
                 }
             }
 
-            AutopackageMain._easyPackageManager.SetAllFeedsStale().Wait();
+            AutopackageMain.PackageManager.SetAllFeedsStale().Wait();
 
             foreach (var pkgName in Source.RequiresRules.SelectMany(each => each["package"].Values)) {
                 // for now, lets just see if we can do a package match, and grab just that packages
                 // in the future, we should figure out how to make better decisions for this.
                 try {
-                    var packages = AutopackageMain._easyPackageManager.GetPackages(pkgName, null, null, null, null, null, null, null, false, null, false).Result.OrderByDescending( each => each.Version).ToArray();
+                    var packages = AutopackageMain.PackageManager.GetPackages(pkgName, null, null, null, null, null, null, null, false, null, false).Result.OrderByDescending( each => each.Version).ToArray();
 
                     if( packages.IsNullOrEmpty()) {
                         Event<Error>.Raise( MessageCode.FailedToFindRequiredPackage, null, "Failed to find package '{0}'.", pkgName);
@@ -343,7 +342,7 @@ namespace CoApp.Autopackage {
 
                     // Console.WriteLine("Package Dependency: {0} -> {1}", pkg.CanonicalName, pkg.ProductCode);
 
-                    AutopackageMain._easyPackageManager.GetPackageDetails(pkg.CanonicalName).Wait();
+                    AutopackageMain.PackageManager.GetPackageDetails(pkg.CanonicalName).Wait();
 
                     DependentPackages.Add(pkg);
                     

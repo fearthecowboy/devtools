@@ -1,12 +1,15 @@
 //-----------------------------------------------------------------------
 // <copyright company="CoApp Project">
-//     Copyright (c) 2011 Garrett Serack . All rights reserved.
+//     Copyright (c) 2010-2012 Garrett Serack and CoApp Contributors. 
+//     Contributors can be discovered using the 'git log' command.
+//     All rights reserved.
 // </copyright>
 // <license>
 //     The software is licensed under the Apache 2.0 License (the "License")
 //     You may not use the software except in compliance with the License. 
 // </license>
 //-----------------------------------------------------------------------
+
 
 namespace CoApp.RepositoryService {
     using System;
@@ -16,13 +19,9 @@ namespace CoApp.RepositoryService {
     using System.Net;
     using System.Threading.Tasks;
     using System.Xml;
-    using Ionic.Zlib;
-    using Toolkit.Engine.Client;
-    using Toolkit.Engine.Model.Atom;
-    using Toolkit.Exceptions;
+    using Packaging.Client;
+    using Packaging.Common.Model.Atom;
     using Toolkit.Extensions;
-    using Toolkit.Logging;
-    using Toolkit.Network;
     using Toolkit.Tasks;
     using System.ServiceModel.Syndication;
 
@@ -74,7 +73,7 @@ namespace CoApp.RepositoryService {
         }
         */
 
-        private static EasyPackageManager _easyPackageManager = new EasyPackageManager();
+        private static readonly PackageManager PackageManager = new PackageManager();
 
         public override Task Put(HttpListenerResponse response, string relativePath, byte[] data) {
             if( data.Length < 1 ) {
@@ -89,7 +88,7 @@ namespace CoApp.RepositoryService {
                     File.WriteAllBytes(filename, data);
 
                     // verify that the file is actually a valid package
-                    _easyPackageManager.GetPackages(filename).ContinueWith(
+                    PackageManager.GetPackages(filename).ContinueWith(
                         antecedent => {
                             if( antecedent.IsFaulted ) {
                                 Console.WriteLine("Fault occurred after upload: {0}", filename);
@@ -118,7 +117,7 @@ namespace CoApp.RepositoryService {
 
                             var targetFilename = (pkg.CanonicalName + ".msi").ToLower();
                             var location = new Uri(_packagePrefixUrl, targetFilename);
-                            _easyPackageManager.GetPackageDetails(pkg.CanonicalName).Wait();
+                            PackageManager.GetPackageDetails(pkg.CanonicalName).Wait();
 
                             //copy the package to the destination
                             if (_cloudFileSystem != null) {

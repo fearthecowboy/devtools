@@ -72,7 +72,10 @@
     <Compile Include="managed-bootstrap\AsyncDownloader.cs" />
     <Compile Include="managed-bootstrap\Gac.cs" />
     <Compile Include="managed-bootstrap\Logger.cs" />
+    <Compile Include="managed-bootstrap\MultifactorProgressTracker.cs" />
     <Compile Include="managed-bootstrap\NativeMethods.cs" />
+    <Compile Include="managed-bootstrap\ProgressFactor.cs" />
+    <Compile Include="managed-bootstrap\ProgressWeight.cs" />
     <Compile Include="managed-bootstrap\SingleStep.cs" />
     <Compile Include="managed-bootstrap\WinVerifyTrustResult.cs" />
     <Page Include="managed-bootstrap\AreYouSure.xaml">

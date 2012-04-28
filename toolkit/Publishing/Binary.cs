@@ -941,38 +941,40 @@ namespace CoApp.Developer.Toolkit.Publishing {
                             }
                             // we should see if we can get assembly attributes, since sometimes they can be set, but not the native ones.
                             try {
-                                foreach (var a in _mutableAssembly.AssemblyAttributes) {
-                                    var attributeArgument = (a.Arguments.FirstOrDefault() as MetadataConstant);
-                                    if (attributeArgument != null) {
-                                        var attributeName = a.Type.ToString();
-                                        switch (attributeName) {
-                                            case "System.Reflection.AssemblyTitleAttribute":
-                                                attributeArgument.Value = string.IsNullOrEmpty(AssemblyTitle) ? string.Empty : AssemblyTitle;
-                                                break;
-                                            case "System.Reflection.AssemblyDescriptionAttribute":
-                                                attributeArgument.Value = string.IsNullOrEmpty(AssemblyDescription) ? string.Empty : AssemblyDescription;
-                                                break;
-                                            case "System.Reflection.AssemblyCompanyAttribute":
-                                                attributeArgument.Value = string.IsNullOrEmpty(AssemblyCompany) ? string.Empty : AssemblyCompany;
-                                                break;
-                                            case "System.Reflection.AssemblyProductAttribute":
-                                                attributeArgument.Value = string.IsNullOrEmpty(AssemblyProduct) ? string.Empty : AssemblyProduct;
-                                                break;
-                                                //case "System.Reflection.AssemblyVersionAttribute":
-                                                // attributeArgument.Value = (string)AssemblyVersion;
-                                                // break;
-                                            case "System.Reflection.AssemblyFileVersionAttribute":
-                                                attributeArgument.Value = (string)AssemblyFileVersion;
-                                                break;
-                                            case "System.Reflection.AssemblyCopyrightAttribute":
-                                                attributeArgument.Value = string.IsNullOrEmpty(AssemblyCopyright) ? string.Empty : AssemblyCopyright;
-                                                break;
-                                            case "System.Reflection.AssemblyTrademarkAttribute":
-                                                attributeArgument.Value = string.IsNullOrEmpty(AssemblyTrademark) ? string.Empty : AssemblyTrademark;
-                                                break;
-                                            case "BugTrackerAttribute":
-                                                attributeArgument.Value = string.IsNullOrEmpty(BugTracker) ? string.Empty : BugTracker;
-                                                break;
+                                if (!_mutableAssembly.AssemblyAttributes.IsNullOrEmpty()) {
+                                    foreach (var a in _mutableAssembly.AssemblyAttributes) {
+                                        var attributeArgument = (a.Arguments.FirstOrDefault() as MetadataConstant);
+                                        if (attributeArgument != null) {
+                                            var attributeName = a.Type.ToString();
+                                            switch (attributeName) {
+                                                case "System.Reflection.AssemblyTitleAttribute":
+                                                    attributeArgument.Value = string.IsNullOrEmpty(AssemblyTitle) ? string.Empty : AssemblyTitle;
+                                                    break;
+                                                case "System.Reflection.AssemblyDescriptionAttribute":
+                                                    attributeArgument.Value = string.IsNullOrEmpty(AssemblyDescription) ? string.Empty : AssemblyDescription;
+                                                    break;
+                                                case "System.Reflection.AssemblyCompanyAttribute":
+                                                    attributeArgument.Value = string.IsNullOrEmpty(AssemblyCompany) ? string.Empty : AssemblyCompany;
+                                                    break;
+                                                case "System.Reflection.AssemblyProductAttribute":
+                                                    attributeArgument.Value = string.IsNullOrEmpty(AssemblyProduct) ? string.Empty : AssemblyProduct;
+                                                    break;
+                                                    //case "System.Reflection.AssemblyVersionAttribute":
+                                                    // attributeArgument.Value = (string)AssemblyVersion;
+                                                    // break;
+                                                case "System.Reflection.AssemblyFileVersionAttribute":
+                                                    attributeArgument.Value = (string)AssemblyFileVersion;
+                                                    break;
+                                                case "System.Reflection.AssemblyCopyrightAttribute":
+                                                    attributeArgument.Value = string.IsNullOrEmpty(AssemblyCopyright) ? string.Empty : AssemblyCopyright;
+                                                    break;
+                                                case "System.Reflection.AssemblyTrademarkAttribute":
+                                                    attributeArgument.Value = string.IsNullOrEmpty(AssemblyTrademark) ? string.Empty : AssemblyTrademark;
+                                                    break;
+                                                case "BugTrackerAttribute":
+                                                    attributeArgument.Value = string.IsNullOrEmpty(BugTracker) ? string.Empty : BugTracker;
+                                                    break;
+                                            }
                                         }
                                     }
                                 }

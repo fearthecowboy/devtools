@@ -143,9 +143,12 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                             } else 
                             if (innerMacro.Contains(".")) {
                                 innerMacro = innerMacro.Substring(innerMacro.IndexOf('.') + 1).Trim();
-                                var r = eachItem.SimpleEval(innerMacro).ToString();
-                                value = value.Replace(outerMacro, r);
-                                keepGoing = true;
+                                var v = eachItem.SimpleEval(innerMacro);
+                                if (v != null) {
+                                    var r = v.ToString();
+                                    value = value.Replace(outerMacro, r);
+                                    keepGoing = true;
+                                }
                             }
                         }
                         catch {

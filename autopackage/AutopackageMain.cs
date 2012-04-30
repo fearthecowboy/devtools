@@ -317,8 +317,8 @@ namespace CoApp.Autopackage {
 
             wixDocument.CreatePackageFile(msiFile);
             FailOnErrors();
-
-            PeBinary.SignFile(msiFile, PackageSource.Certificate);
+            Binary.SignFile(msiFile, PackageSource.Certificate);
+            // PeBinary.SignFile(msiFile, PackageSource.Certificate);
             Console.WriteLine("\r\n ==========\r\n DONE : Signed MSI File: {0}", msiFile);
 
             // recognize the new package in case it is needed for another package.

@@ -44,6 +44,10 @@ namespace CoApp.Bootstrapper {
         private const string CoAppUrl = "http://coapp.org/resources/";
         internal static string MsiFilename;
         internal static string MsiFolder;
+        internal static bool Quiet;
+        internal static bool Passive;
+        internal static bool Remove;
+
         internal static string BootstrapFolder;
         private static int _progressDirection = 1;
         private static int _currentTotalTicks = -1;
@@ -91,6 +95,21 @@ namespace CoApp.Bootstrapper {
                     // have a valid MSI file. Alrighty!
                     MsiFilename = Path.GetFullPath(args[0]);
                     MsiFolder = Path.GetDirectoryName(MsiFilename);
+
+                    if( args.Length > 1 ) {
+
+                        foreach (var split in args.Skip(1).Select(a => a.ToLower().Split(new[] {'='}, StringSplitOptions.RemoveEmptyEntries)).Where(split => split.Length >= 2)) {
+                            if( split[0] == "--uilevel" ) {
+                                Quiet = split[1] == "2";
+                                Passive= split[1] == "3";
+                            }
+
+                            if(split[0] == "--remove") {
+                                Remove = !string.IsNullOrEmpty(split[1]);
+                            }
+                        }
+                    }
+
 
                     // if this installer is present, this will exit right after.
                     if (IsCoAppInstalled) {
@@ -246,6 +265,10 @@ namespace CoApp.Bootstrapper {
                 appDomain.SetData("COAPP_INSTALLED", "TRUE");
             }
 
+            appDomain.SetData("QUIET", Quiet);
+            appDomain.SetData("PASSIVE", Passive);
+            appDomain.SetData("REMOVE", Remove);
+
             try {
                 // If we're bypassing the UI, then we can jump straight to the Installer.
                 if (bypassingBootstrapUI) {
@@ -291,7 +314,7 @@ namespace CoApp.Bootstrapper {
 
             if (!string.IsNullOrEmpty(localAssembly)) {
                 // use the one found locally.
-                appDomain.CreateInstanceFromAndUnwrap(localAssembly, "CoApp.Toolkit.Engine.Client.Installer", false, BindingFlags.Default, null, new[] { MsiFilename }, null, null);
+                appDomain.CreateInstanceFromAndUnwrap(localAssembly, "CoApp.Packaging.Client.UI.Installer", false, BindingFlags.Default, null, new[] { MsiFilename }, null, null);
                 // if it didn't throw here, we can assume that the CoApp service is running, and we can get to our assembly.
                 ExitQuick();
             }
@@ -305,7 +328,7 @@ namespace CoApp.Bootstrapper {
                 });
                 // meh. use strong named assembly
                 appDomain.CreateInstanceAndUnwrap("CoApp.Client, Version=" + MIN_COAPP_VERSION + ", Culture=neutral, PublicKeyToken=1e373a58e25250cb",
-                    "CoApp.Toolkit.Engine.Client.Installer", false, BindingFlags.Default, null, new[] {MsiFilename}, null, null);
+                    "CoApp.Packaging.Client.UI.Installer", false, BindingFlags.Default, null, new[] { MsiFilename }, null, null);
                 // since we've done everything we need to do, we're out of here. Right Now.
             } catch (Exception e) {
                 Logger.Error("Critical FAIL ");
@@ -593,6 +616,10 @@ namespace CoApp.Bootstrapper {
                             var CoAppCacheFolder = Path.Combine(CoAppRootFolder.Value, ".cache", "packages");
                             Directory.CreateDirectory(CoAppCacheFolder);
 
+                            if( MsiCanonicalName.IndexOf(":") > -1 ) {
+                                MsiCanonicalName = MsiCanonicalName.Substring(MsiCanonicalName.IndexOf(":") + 1);
+                            }
+
                             var cachedPath = Path.Combine(CoAppCacheFolder, MsiCanonicalName + ".msi");
                             if (!File.Exists(cachedPath)) {
                                 File.Copy(file, cachedPath);
@@ -706,9 +733,17 @@ namespace CoApp.Bootstrapper {
                     size = 1024;
                     var sb2 = new StringBuilder(1024);
                     NativeMethods.MsiGetProperty(hProduct, "CanonicalName", sb2, ref size);
+
+                    size = 1024;
+                    var sb3 = new StringBuilder(1024);
+                    NativeMethods.MsiGetProperty(hProduct, "ProductVersion", sb3, ref size);
+
                     NativeMethods.MsiCloseHandle(hProduct);
 
-                    if (sb.ToString().Equals("CoApp.Toolkit")) {
+                    var requiredVersion = VersionStringToUInt64(MIN_COAPP_VERSION);
+                    var pkgVersion = VersionStringToUInt64(sb3.ToString());
+
+                    if ( pkgVersion >= requiredVersion && sb.ToString().ToLower().Equals("CoApp.Toolkit")) {
                         MsiCanonicalName = sb2.ToString();
                         return true;
                     }

@@ -105,27 +105,21 @@ namespace CoApp.Autopackage {
                     fs.Write(Resources.coapp_native_bootstrap, 0, Resources.coapp_native_bootstrap.Length);
                 }
 
-                // resign the file
-                var peBinary = PeBinary.Load(bootstrapTempFile);
-                peBinary.StrongNameKeyCertificate = Source.Certificate;
-                peBinary.SigningCertificate = Source.Certificate;
-                peBinary.CompanyName = Model.Vendor;
-
-                peBinary.Comments = "Installer for " + Model.DisplayName;
-                peBinary.ProductName = "Installer for " + Model.DisplayName;
-                peBinary.AssemblyTitle = "Installer for " + Model.DisplayName;
-                peBinary.AssemblyDescription = "Installer for " + Model.DisplayName;
-
-                peBinary.LegalCopyright = Model.PackageDetails.CopyrightStatement;
-
-                peBinary.ProductVersion = Model.Version.ToString();
-                peBinary.FileVersion = Model.Version.ToString();
-
-                peBinary.FileVersion = Model.Version.ToString();
-                peBinary.ProductVersion = Model.Version.ToString();
-
-                peBinary.Save();
-
+                Binary.Load(bootstrapTempFile, BinaryLoadOptions.NoManaged).Continue(binary => {
+                    binary.SigningCertificate = Source.Certificate;
+                    binary.CompanyName = Model.Vendor;
+                    binary.Comments = "Installer for " + Model.DisplayName;
+                    binary.ProductName = "Installer for " + Model.DisplayName;
+                    binary.AssemblyTitle = "Installer for " + Model.DisplayName;
+                    binary.AssemblyDescription = "Installer for " + Model.DisplayName;
+                    binary.LegalCopyright = Model.PackageDetails.CopyrightStatement;
+                    binary.ProductVersion = Model.Version.ToString();
+                    binary.FileVersion = Model.Version.ToString();
+                    binary.FileVersion = Model.Version.ToString();
+                    binary.ProductVersion = Model.Version.ToString();
+                    return binary.Save();
+                }).Wait();
+                
                 coappBootstrapNativeBin.Attributes.SourceFile = bootstrapTempFile;
             }
 
@@ -138,23 +132,20 @@ namespace CoApp.Autopackage {
                 }
 
                 // resign the file
-                var peBinary = PeBinary.Load(managedBootstrapTemporaryFile);
-                peBinary.StrongNameKeyCertificate = Source.Certificate;
-                peBinary.SigningCertificate = Source.Certificate;
-                peBinary.CompanyName = Model.Vendor;
-
-                peBinary.Comments = "Installer for " + Model.DisplayName;
-                peBinary.ProductName = "Installer for " + Model.DisplayName;
-                peBinary.AssemblyTitle = "Installer for " + Model.DisplayName;
-                peBinary.AssemblyDescription = "Installer for " + Model.DisplayName;
-                peBinary.LegalCopyright = Model.PackageDetails.CopyrightStatement;
-                peBinary.FileVersion = Model.Version.ToString();
-                peBinary.ProductVersion = Model.Version.ToString();
-
-                peBinary.ProductVersion = Model.Version.ToString();
-                peBinary.FileVersion = Model.Version.ToString();
-                peBinary.Save();
-
+                Binary.Load(managedBootstrapTemporaryFile, BinaryLoadOptions.NoManaged).Continue(binary => {
+                    binary.SigningCertificate = Source.Certificate;
+                    binary.CompanyName = Model.Vendor;
+                    binary.Comments = "Installer for " + Model.DisplayName;
+                    binary.ProductName = "Installer for " + Model.DisplayName;
+                    binary.AssemblyTitle = "Installer for " + Model.DisplayName;
+                    binary.AssemblyDescription = "Installer for " + Model.DisplayName;
+                    binary.LegalCopyright = Model.PackageDetails.CopyrightStatement;
+                    binary.FileVersion = Model.Version.ToString();
+                    binary.ProductVersion = Model.Version.ToString();
+                    binary.ProductVersion = Model.Version.ToString();
+                    binary.FileVersion = Model.Version.ToString();
+                    return binary.Save();
+                }).Wait();
                 coappBootstrapBin.Attributes.SourceFile = managedBootstrapTemporaryFile;
             }
         }

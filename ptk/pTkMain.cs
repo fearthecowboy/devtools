@@ -592,8 +592,6 @@ pTK [options] action [buildconfiguration...]
             // _originalEnvironment.Add("COAPP", CoApp.Toolkit.Engine.PackageManagerSettings.CoAppRootDirectory);
             _originalEnvironment.AddOrSet("COAPP", "C:/programdata/");
 
-
-
             while (string.IsNullOrEmpty(buildinfo) || !File.Exists(buildinfo)) {
                 // if the user didn't pass in the file, walk up the tree to find the first directory that has a COPKG\.buildinfo file 
                 buildinfo = (from a in @".\COPKG\".DirectoryEnumerateFilesSmarter("*.buildinfo", SearchOption.TopDirectoryOnly)
@@ -1554,7 +1552,7 @@ REM ===================================================================
         private static int Help() {
             Logo();
             using (new ConsoleColors(ConsoleColor.White, ConsoleColor.Black)) {
-                help.Print();
+                Console.WriteLine(help);
             }
             return 0;
         }
@@ -1567,7 +1565,7 @@ REM ===================================================================
         /// </remarks>
         private static void Logo() {
             using (new ConsoleColors(ConsoleColor.Cyan, ConsoleColor.Black)) {
-                Assembly.GetEntryAssembly().Logo().Print();
+                Console.WriteLine(Assembly.GetEntryAssembly().Logo());
             }
             Assembly.GetEntryAssembly().SetLogo("");
         }

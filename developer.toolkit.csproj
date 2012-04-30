@@ -97,7 +97,6 @@
     <Compile Include="Toolkit\Publishing\NativeManifest.cs" />
     <Compile Include="Toolkit\Publishing\Binary.cs" />
     <Compile Include="Toolkit\Publishing\NoInherit.cs" />
-    <Compile Include="Toolkit\Publishing\PeBinary.cs" />
     <Compile Include="Toolkit\Publishing\Prerequisite.cs" />
     <Compile Include="Toolkit\Publishing\TaskList.cs" />
     <Compile Include="Toolkit\Publishing\TrustInfo.cs" />

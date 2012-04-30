@@ -381,7 +381,7 @@ It looks for Microsoft, Cygwin, MinGW, Watcom, Borland, IBM intel compilers.
         private static int Help() {
             Logo();
             using (new ConsoleColors(ConsoleColor.White, ConsoleColor.Black)) {
-                help.Print();
+                Console.WriteLine(help);
             }
             return 0;
         }
@@ -392,7 +392,7 @@ It looks for Microsoft, Cygwin, MinGW, Watcom, Borland, IBM intel compilers.
         /// <remarks></remarks>
         private static void Logo() {
             using (new ConsoleColors(ConsoleColor.Cyan, ConsoleColor.Black)) {
-                Assembly.GetEntryAssembly().Logo().Print();
+                Console.WriteLine(Assembly.GetEntryAssembly().Logo());
             }
             Assembly.GetEntryAssembly().SetLogo("");
         }

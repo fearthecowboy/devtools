@@ -485,7 +485,7 @@ Manifest Options:
         private int Help() {
             Logo();
             using (new ConsoleColors(ConsoleColor.White, ConsoleColor.Black)) {
-                HelpMessage.Print();
+                Console.WriteLine(HelpMessage);
             }
 
             return 0;
@@ -496,7 +496,7 @@ Manifest Options:
         /// </summary>
         private void Logo() {
             using (new ConsoleColors(ConsoleColor.Cyan, ConsoleColor.Black)) {
-                this.Assembly().Logo().Print();
+                    
             }
 
             this.Assembly().SetLogo(string.Empty);

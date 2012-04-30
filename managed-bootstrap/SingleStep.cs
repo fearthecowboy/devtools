@@ -743,7 +743,7 @@ namespace CoApp.Bootstrapper {
                     var requiredVersion = VersionStringToUInt64(MIN_COAPP_VERSION);
                     var pkgVersion = VersionStringToUInt64(sb3.ToString());
 
-                    if ( pkgVersion >= requiredVersion && sb.ToString().ToLower().Equals("CoApp.Toolkit")) {
+                    if ( pkgVersion >= requiredVersion && sb.ToString().ToLower().Equals("coapp.toolkit")) {
                         MsiCanonicalName = sb2.ToString();
                         return true;
                     }

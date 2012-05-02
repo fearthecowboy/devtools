@@ -20,6 +20,7 @@ namespace CoApp.RepositoryService {
     using System.Threading.Tasks;
     using System.Xml;
     using Packaging.Client;
+    using Packaging.Common;
     using Packaging.Common.Model.Atom;
     using Toolkit.Extensions;
     using Toolkit.Tasks;
@@ -126,7 +127,7 @@ namespace CoApp.RepositoryService {
                                     ConsoleExtensions.PrintProgressBar("{0} => {1}".format(pkg.CanonicalName, _packageStorageFolder), progress);
                                 });
 
-                                if (pkg.Name.Equals("coapp.toolkit", StringComparison.CurrentCultureIgnoreCase) && pkg.PublicKeyToken.Equals("1e373a58e25250cb", StringComparison.CurrentCultureIgnoreCase)) {
+                                if (pkg.CanonicalName.Matches(CanonicalName.CoAppItself)) {
                                     // update the default toolkit too
                                     _cloudFileSystem.WriteBlob(_packageStorageFolder, "coapp.toolkit.msi", filename, false, (progress) => {
                                         ConsoleExtensions.PrintProgressBar("{0} => {1}".format(_localfeedLocation, _packageStorageFolder), progress);
@@ -134,7 +135,7 @@ namespace CoApp.RepositoryService {
                                     Console.WriteLine();
                                 }
 
-                                if (pkg.Name.Equals("coapp.devtools", StringComparison.CurrentCultureIgnoreCase) && pkg.PublicKeyToken.Equals("1e373a58e25250cb", StringComparison.CurrentCultureIgnoreCase)) {
+                                if (pkg.CanonicalName.Matches(CanonicalName.CoAppDevtools)) {
                                     // update the default toolkit too
                                     _cloudFileSystem.WriteBlob(_packageStorageFolder, "coapp.devtools.msi", filename, false, (progress) => {
                                         ConsoleExtensions.PrintProgressBar("{0} => {1}".format(_localfeedLocation, _packageStorageFolder), progress);

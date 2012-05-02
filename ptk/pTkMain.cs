@@ -829,7 +829,7 @@ pTK [options] action [buildconfiguration...]
             }
             if (parameters.Any()) {
                 var allbuilds = from rule in _propertySheet.Rules where rule.Name != "*" select rule;
-                builds = parameters.Aggregate(Enumerable.Empty<Rule>(), (current, p) => current.Union(from build in allbuilds where build.Name.IsWildcardMatch(p) select build));
+                builds = parameters.Aggregate(Enumerable.Empty<Rule>(), (current, p) => current.Union(from build in allbuilds where build.Name.NewIsWildcardMatch(p) select build));
             }
 
             // are there even builds present?

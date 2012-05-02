@@ -84,7 +84,7 @@ namespace CoApp.Azure {
         public IEnumerable<string> GetBlobNames(string containerName, string fileMask = null) {
             if (ContainerExists(containerName)) {
                 var container = _blobStore.GetContainerReference(containerName);
-                return container.ListBlobs(new BlobRequestOptions {UseFlatBlobListing = true}).Select(each => PathInContainer(each.Uri)).Where(each => each.IsWildcardMatch(fileMask));
+                return container.ListBlobs(new BlobRequestOptions { UseFlatBlobListing = true }).Select(each => PathInContainer(each.Uri)).Where(each => each.NewIsWildcardMatch(fileMask));
             }
             return Enumerable.Empty<string>();
         }
@@ -103,7 +103,7 @@ namespace CoApp.Azure {
                 var container = _blobStore.GetContainerReference(containerName);
 
                 var blobs = container.ListBlobs(new BlobRequestOptions {UseFlatBlobListing = true, BlobListingDetails = BlobListingDetails.All});
-                var matchBlobs = blobs.Where(each => PathInContainer(each.Uri).IsWildcardMatch(fileMask)).ToArray();
+                var matchBlobs = blobs.Where(each => PathInContainer(each.Uri).NewIsWildcardMatch(fileMask)).ToArray();
 
                 return matchBlobs.Select(each => {
                     var blob = (CloudBlob)each;

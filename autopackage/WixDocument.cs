@@ -16,6 +16,7 @@ namespace CoApp.Autopackage {
     using System.Drawing.Imaging;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Threading.Tasks;
     using System.Xml.Linq;
     using Developer.Toolkit.Publishing;
@@ -43,7 +44,7 @@ namespace CoApp.Autopackage {
 
         private dynamic ProductDir {
             get {
-                return FindOrCreateDirectory(VendorDir, Model.CanonicalName.ToString().MakeAttractiveFilename());
+                return FindOrCreateDirectory(VendorDir, Model.CanonicalName.PackageName.MakeAttractiveFilename());
             }
         }
 
@@ -96,13 +97,28 @@ namespace CoApp.Autopackage {
 
         private void AddBootstrappersToWix() {
             // "CoappBootstrapNativeBin"
+            var foldersWeCareAbout = new string[] {
+                Path.GetDirectoryName(Assembly.GetEntryAssembly().Location.GetFullPath()),
+                Environment.CurrentDirectory,
+                Path.GetDirectoryName(Source.SourceFile)
+            };
 
             var coappBootstrapNativeBin = wix.Product["Id=native_bootstrap.exe"];
             if (coappBootstrapNativeBin != null) {
                 var bootstrapTempFile = "native-bootstrap.exe".GetFileInTempFolder();
 
-                using (var fs = File.Create(bootstrapTempFile)) {
-                    fs.Write(Resources.coapp_native_bootstrap, 0, Resources.coapp_native_bootstrap.Length);
+                foreach( var folder in foldersWeCareAbout ) {
+                    var file = Path.Combine(folder, "native-bootstrap.exe");
+                    if (File.Exists(file)) {
+                        File.Copy(file, bootstrapTempFile, true);
+                        break;
+                    }
+                }
+
+                if (!File.Exists(bootstrapTempFile)) {
+                    using (var fs = File.Create(bootstrapTempFile)) {
+                        fs.Write(Resources.coapp_native_bootstrap, 0, Resources.coapp_native_bootstrap.Length);
+                    }
                 }
 
                 Binary.Load(bootstrapTempFile, BinaryLoadOptions.NoManaged).Continue(binary => {
@@ -127,8 +143,18 @@ namespace CoApp.Autopackage {
             if (coappBootstrapBin != null) {
                 var managedBootstrapTemporaryFile = "managed_bootstrap.exe".GetFileInTempFolder();
 
-                using (var fs = File.Create(managedBootstrapTemporaryFile)) {
-                    fs.Write(Resources.coapp_managed_bootstrap, 0, Resources.coapp_managed_bootstrap.Length);
+                foreach (var folder in foldersWeCareAbout) {
+                    var file = Path.Combine(folder, "managed-bootstrap.exe");
+                    if (File.Exists(file)) {
+                        File.Copy(file, managedBootstrapTemporaryFile, true);
+                        break;
+                    }
+                }
+
+                if (!File.Exists(managedBootstrapTemporaryFile)) {
+                    using (var fs = File.Create(managedBootstrapTemporaryFile)) {
+                        fs.Write(Resources.coapp_managed_bootstrap, 0, Resources.coapp_managed_bootstrap.Length);
+                    }
                 }
 
                 // resign the file

@@ -193,13 +193,13 @@ namespace CoApp.Toolkit.Utility {
 
             if (includeFilters != null) {
                 files = includeFilters.Aggregate(files, (current, filter) => (from eachFile in current
-                                                                              where eachFile.IsWildcardMatch(filter)
+                                                                              where eachFile.NewIsWildcardMatch(filter)
                                                                               select eachFile));
             }
 
             if (excludeFilters != null) {
                 files = excludeFilters.Aggregate(files, (current, filter) => (from eachFile in current
-                    where !eachFile.IsWildcardMatch(filter)
+                                                                              where !eachFile.NewIsWildcardMatch(filter)
                                                                               select eachFile));
             }
 

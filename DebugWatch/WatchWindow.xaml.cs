@@ -29,7 +29,9 @@ namespace DebugWatch {
             itemsGrid.CanUserResizeRows = false;
 
             DebugMessages.CollectionChanged += (sender, args) => {
-                itemsGrid.ScrollIntoView(DebugMessages.Last());
+                if (DebugMessages.Any()) {
+                    itemsGrid.ScrollIntoView(DebugMessages.Last());
+                }
             };
             Monitor.Start();
         }

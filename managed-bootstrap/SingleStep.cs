@@ -308,24 +308,26 @@ namespace CoApp.Bootstrapper {
                 var ping = new EventWaitHandle(false, EventResetMode.ManualReset, "BootstrapperPing", out wasCreated, ewhSec);
                 ping.Reset();
 
-#if DEBUG_X
-            var localAssembly = AcquireFile("CoApp.Client.dll");
-            Logger.Message("Local Assembly: " + localAssembly);
-
-            if (!string.IsNullOrEmpty(localAssembly)) {
-                // use the one found locally.
-                appDomain.CreateInstanceFromAndUnwrap(localAssembly, "CoApp.Packaging.Client.UI.Installer", false, BindingFlags.Default, null, new[] { MsiFilename }, null, null);
-                // if it didn't throw here, we can assume that the CoApp service is running, and we can get to our assembly.
-                ExitQuick();
-            }
-#endif
-
                 Task.Factory.StartNew(() => {
                     ping.WaitOne();
                     MainWindow.WhenReady += () => {
                         MainWindow.MainWin.Visibility = Visibility.Hidden;
                     };
                 });
+
+#if DEBUG_X
+            //var localAssembly = AcquireFile(@"c:\root\sync\coapp\output\any\debug\bin\CoApp.Client.dll");
+            //Logger.Message("Local Assembly: " + localAssembly);
+
+            //if (!string.IsNullOrEmpty(localAssembly)) {
+                // use the one found locally.
+                appDomain.CreateInstanceFromAndUnwrap(@"c:\root\sync\coapp\coapp\output\any\debug\bin\CoApp.Client.dll", "CoApp.Packaging.Client.UI.Installer", false, BindingFlags.Default, null, new[] { MsiFilename }, null, null);
+                // if it didn't throw here, we can assume that the CoApp service is running, and we can get to our assembly.
+                ExitQuick();
+            //}
+#endif
+
+              
                 // meh. use strong named assembly
                 appDomain.CreateInstanceAndUnwrap("CoApp.Client, Version=" + MIN_COAPP_VERSION + ", Culture=neutral, PublicKeyToken=1e373a58e25250cb",
                     "CoApp.Packaging.Client.UI.Installer", false, BindingFlags.Default, null, new[] { MsiFilename }, null, null);

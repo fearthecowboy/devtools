@@ -313,7 +313,7 @@ namespace CoApp.Autopackage {
 
             if( !Name.Equals("coapp.toolkit", StringComparison.CurrentCultureIgnoreCase) ) {
                 // don't auto-add the coapp.toolkit dependency for the toolkit itself.
-                var toolkitPackage = AutopackageMain.PackageManager.GetPackages("coapp.toolkit-*-any-1e373a58e25250cb", null, null, null, null, null, null, null, null, null, false).Result.OrderByDescending(each => each.Version).FirstOrDefault();
+                var toolkitPackage = AutopackageMain.PackageManager.GetPackages(CanonicalName.CoAppItself, null, null, null, null, null, null, null, null, null, false).Result.OrderByDescending(each => each.Version).FirstOrDefault();
                 
                 if( toolkitPackage != null ) {
                     AutopackageMain.PackageManager.GetPackageDetails(toolkitPackage.CanonicalName).Wait();

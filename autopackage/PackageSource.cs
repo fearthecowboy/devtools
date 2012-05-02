@@ -56,6 +56,7 @@ namespace CoApp.Autopackage {
         internal IEnumerable<Rule> IdentityRules;
         internal IEnumerable<Rule> SigningRules;
         internal IEnumerable<Rule> FileRules;
+        internal string SourceFile;
 
         private AutopackageMain _mainInstance;
 
@@ -88,8 +89,10 @@ namespace CoApp.Autopackage {
 
             FindCertificate();
 
+            SourceFile = autopackageSourceFile;
+
             // load up all the specified property sheets
-            LoadPropertySheets(autopackageSourceFile);
+            LoadPropertySheets(SourceFile);
 
             // Determine the roles that are going into the MSI, and ensure we know the basic information for the package (ver, arch, etc)
             CollectRoleRules();

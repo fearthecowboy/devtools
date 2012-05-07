@@ -13,9 +13,9 @@ namespace CoApp.Toolkit.Text.Sgml {
     public class SgmlDtd {
         private string m_name;
 
-        private Dictionary<string, ElementDecl> m_elements;
-        private Dictionary<string, Entity> m_pentities;
-        private Dictionary<string, Entity> m_entities;
+        private IDictionary<string, ElementDecl> m_elements;
+        private IDictionary<string, Entity> m_pentities;
+        private IDictionary<string, Entity> m_entities;
         private StringBuilder m_sb;
         private Entity m_current;
 
@@ -317,7 +317,7 @@ namespace CoApp.Toolkit.Text.Sgml {
         /// </summary>
         /// <returns>A dictionary for looking up entities by their <see cref = "Entity.Literal" /> value.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024", Justification = "This method creates and copies a dictionary, so exposing it as a property is not appropriate.")]
-        public Dictionary<string, Entity> GetEntitiesLiteralNameLookup() {
+        public IDictionary<string, Entity> GetEntitiesLiteralNameLookup() {
             var hashtable = new Dictionary<string, Entity>();
             foreach(Entity entity in this.m_entities.Values)
                 hashtable[entity.Literal] = entity;

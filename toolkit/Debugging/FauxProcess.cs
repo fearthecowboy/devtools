@@ -14,6 +14,7 @@ namespace CoApp.Developer.Toolkit.Debugging {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using CoApp.Toolkit.Collections;
 
     public class FauxProcess {
         private FauxProcess() {
@@ -24,7 +25,7 @@ namespace CoApp.Developer.Toolkit.Debugging {
         public DateTime StartTime { get; private set; }
         public DateTime FirstMessageTime { get; private set; }
 
-        private static readonly Dictionary<int, FauxProcess> ProcessCache = new Dictionary<int, FauxProcess>();
+        private static readonly IDictionary<int, FauxProcess> ProcessCache = new XDictionary<int, FauxProcess>();
 
         internal static FauxProcess GetProcess(int pid, DateTime msgTime) {
             lock (ProcessCache) {

@@ -18,12 +18,13 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
     using System.IO;
     using System.Linq;
     using System.Text.RegularExpressions;
+    using CoApp.Toolkit.Collections;
     using CoApp.Toolkit.Extensions;
 
     public class PropertySheet : DynamicObject {
         private static readonly Regex Macro = new Regex(@"(\$\{(.*?)\})");
         private readonly List<Rule> _rules = new List<Rule>();
-        private readonly Dictionary<string, PropertySheet> _importedSheets = new Dictionary<string, PropertySheet>();
+        private readonly IDictionary<string, PropertySheet> _importedSheets = new XDictionary<string, PropertySheet>();
 
         public delegate IEnumerable<object> GetCollectionDelegate(string collectionName);
 
@@ -35,7 +36,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
 
         public string Filename { get; internal set; }
 
-        public Dictionary<string, PropertySheet> ImportedSheets {
+        public IDictionary<string, PropertySheet> ImportedSheets {
             get {
                 return _importedSheets;
             }

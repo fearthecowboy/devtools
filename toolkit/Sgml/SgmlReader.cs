@@ -76,7 +76,7 @@ namespace CoApp.Toolkit.Text.Sgml {
         private CaseFolding m_folding = CaseFolding.None;
         private bool m_stripDocType = true;
         //private string m_startTag;
-        private Dictionary<string, string> unknownNamespaces = new Dictionary<string, string>();
+        private IDictionary<string, string> unknownNamespaces = new Dictionary<string, string>();
 
         /// <summary>
         ///   Initialises a new instance of the SgmlReader class.

@@ -12,7 +12,7 @@ namespace CoApp.Toolkit.Text.Sgml {
         private ContentModel m_contentModel;
         private string[] m_inclusions;
         private string[] m_exclusions;
-        private Dictionary<string, AttDef> m_attList;
+        private IDictionary<string, AttDef> m_attList;
 
         /// <summary>
         ///   Initialises a new element declaration instance.

@@ -23,6 +23,7 @@ namespace CoApp.Autopackage {
     using Packaging.Client;
     using Packaging.Common.Model.Atom;
     using Properties;
+    using Toolkit.Collections;
     using Toolkit.Console;
     using Toolkit.Exceptions;
     using Toolkit.Extensions;
@@ -99,7 +100,7 @@ namespace CoApp.Autopackage {
             PackageManager.AddSessionFeed(Environment.CurrentDirectory).Wait();
 
 
-            var macrovals = new Dictionary<string, string>();
+            var macrovals = new XDictionary<string, string>();
 
             try {
                 // default:

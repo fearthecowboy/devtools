@@ -19,6 +19,7 @@ namespace CoApp.RepositoryService {
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading.Tasks;
+    using Toolkit.Collections;
     using Toolkit.Extensions;
     using Toolkit.Pipes;
 
@@ -26,7 +27,7 @@ namespace CoApp.RepositoryService {
         private readonly HttpListener _listener = new HttpListener();
         private readonly List<string> _hosts = new List<string>();
         private readonly List<int> _ports = new List<int>();
-        private readonly Dictionary<string, RequestHandler> _paths = new Dictionary<string, RequestHandler>();
+        private readonly IDictionary<string, RequestHandler> _paths = new XDictionary<string, RequestHandler>();
         private Task<HttpListenerContext> _current = null;
      
         public Listener() {

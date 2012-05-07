@@ -72,7 +72,6 @@
   <ItemGroup>
     <Compile Include="Autopackage\AutopackageException.cs" />
     <Compile Include="Autopackage\AutopackageMain.cs" />
-    <Compile Include="Autopackage\DictionaryExtension.cs" />
     <Compile Include="Autopackage\Extensions.cs" />
     <Compile Include="Autopackage\FileEntry.cs" />
     <Compile Include="Autopackage\FileList.cs" />

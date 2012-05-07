@@ -155,7 +155,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.CSV
 		/// <summary>
 		/// Contains the dictionary of field indexes by header. The key is the field name and the value is its index.
 		/// </summary>
-		private Dictionary<string, int> _fieldHeaderIndexes;
+		private IDictionary<string, int> _fieldHeaderIndexes;
 
 		/// <summary>
 		/// Contains the current record index in the CSV file.

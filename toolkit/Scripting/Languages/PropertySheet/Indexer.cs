@@ -16,13 +16,14 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using CoApp.Toolkit.Collections;
     using Collections;
 
     public class Indexer<T> : IEnumerable<T> where T : class {
         private readonly Func<IEnumerable<string>> _keysFn;
         private readonly Func<string, IEnumerable<Rule>> _lookupFn;
         private readonly Func<string, Rule> _newRuleFn;
-        private readonly Dictionary<string, T> _cache = new Dictionary<string, T>();
+        private readonly IDictionary<string, T> _cache = new XDictionary<string, T>();
 
         // this returns a new referecnce to the rule wrapper in the property sheet each time
         // this is why you shouldn't store data in the wrapper you dumbass.

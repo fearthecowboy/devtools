@@ -21,6 +21,7 @@ namespace CoApp.mkRepo {
     using Packaging.Client;
     using Packaging.Common.Model.Atom;
     using Properties;
+    using Toolkit.Collections;
     using Toolkit.Console;
     using Toolkit.Exceptions;
     using Toolkit.Extensions;
@@ -180,7 +181,7 @@ namespace CoApp.mkRepo {
             Logger.Message("Selecting local packages");
             var files = _packages.FindFilesSmarter();
 
-            _packageManager.GetPackages(files, dependencies: false, latest: false).ContinueWith((antecedent) => {
+            _packageManager.QueryPackages(files, dependencies: false, latest: false).ContinueWith((antecedent) => {
                 var packages = antecedent.Result;
 
                 foreach (var pkg in packages) {
@@ -193,7 +194,7 @@ namespace CoApp.mkRepo {
 
                         // first, make sure that the feeds contains the intended feed location.
                         if (feedItem.Model.Feeds == null) {
-                            feedItem.Model.Feeds = new List<Uri>();
+                            feedItem.Model.Feeds = new XList<Uri>();
                         }
 
                         if (!feedItem.Model.Feeds.Contains(_feedLocation)) {
@@ -203,7 +204,7 @@ namespace CoApp.mkRepo {
                         var location = new Uri(_baseUrl, Path.GetFileName(pkg.LocalPackagePath));
 
                         if (feedItem.Model.Locations == null) {
-                            feedItem.Model.Locations = new List<Uri>();
+                            feedItem.Model.Locations = new XList<Uri>();
                         }
 
                         if (!feedItem.Model.Locations.Contains(location)) {

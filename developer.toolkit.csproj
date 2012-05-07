@@ -47,7 +47,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Toolkit\Collections\LazyEnumerable.cs" />
-    <Compile Include="Toolkit\Collections\EasyListDictionary.cs" />
     <Compile Include="Toolkit\Collections\VirtualEnumerator.cs" />
     <Compile Include="Toolkit\Debugging\FauxProcess.cs" />
     <Compile Include="Toolkit\Debugging\Monitor.cs" />

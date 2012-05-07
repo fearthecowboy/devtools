@@ -26,6 +26,7 @@ namespace CoApp.Autopackage {
     using Packaging.Common.Model;
     using Packaging.Common.Model.Atom;
     using Properties;
+    using Toolkit.Collections;
     using Toolkit.Crypto;
     using Toolkit.Extensions;
     using Toolkit.Logging;
@@ -70,10 +71,10 @@ namespace CoApp.Autopackage {
         internal BindingRedirect BindingRedirect {
             get {
                 if( _bindingRedirect == null ) {
-                    if( BindingPolicyMaxVersion >0 ) {
+                    if (BindingPolicy != null && BindingPolicy.Maximum > 0) {
                         _bindingRedirect = new BindingRedirect {
-                            Low = BindingPolicyMinVersion,
-                            High = BindingPolicyMaxVersion,
+                            Low = BindingPolicy.Minimum,
+                            High = BindingPolicy.Maximum,
                             Target = Version,
                         };
                     }
@@ -85,12 +86,12 @@ namespace CoApp.Autopackage {
         private IEnumerable<TwoPartVersion> _versionRedirects = Enumerable.Empty<TwoPartVersion>();
 
         internal Image IconImage;
-        internal Dictionary<string, string> ChildIcons; 
+        internal XDictionary<string, string> ChildIcons; 
 
         internal AutopackageModel() {
             CompositionData = new Composition();
             DestinationDirectoryFiles = Enumerable.Empty<FileEntry>();
-            Roles = new List<Role>();
+            Roles = new XList<Role>();
             Assemblies = new List<PackageAssembly>();
         }
 
@@ -313,11 +314,11 @@ namespace CoApp.Autopackage {
 
             if( !Name.Equals("coapp.toolkit", StringComparison.CurrentCultureIgnoreCase) ) {
                 // don't auto-add the coapp.toolkit dependency for the toolkit itself.
-                var toolkitPackage = AutopackageMain.PackageManager.GetPackages(CanonicalName.CoAppItself, null, null, null, null, null, null, null, null, null, false).Result.OrderByDescending(each => each.Version).FirstOrDefault();
+                var toolkitPackage = AutopackageMain.PackageManager.QueryPackages(CanonicalName.CoAppItself, null, null, null, null, null, null, null, null, null, false).Result.OrderByDescending(each => each.Version).FirstOrDefault();
                 
                 if( toolkitPackage != null ) {
                     AutopackageMain.PackageManager.GetPackageDetails(toolkitPackage.CanonicalName).Wait();
-                    //Console.WriteLine("Implict Package Dependency: {0} -> {1}", toolkitPackage.CanonicalName, toolkitPackage.ProductCode);
+                    //Console.WriteLine("Implict Package Dependency: {0}", toolkitPackage.CanonicalName);
                     DependentPackages.Add(toolkitPackage);    
                 }
             }
@@ -328,7 +329,7 @@ namespace CoApp.Autopackage {
                 // for now, lets just see if we can do a package match, and grab just that packages
                 // in the future, we should figure out how to make better decisions for this.
                 try {
-                    var packages = AutopackageMain.PackageManager.GetPackages(pkgName, null, null, null, null, null, null, null, false, null, false).Result.OrderByDescending( each => each.Version).ToArray();
+                    var packages = AutopackageMain.PackageManager.QueryPackages(pkgName, null, null, null, null, null, null, null, false, null, false).Result.OrderByDescending(each => each.Version).ToArray();
 
                     if( packages.IsNullOrEmpty()) {
                         Event<Error>.Raise( MessageCode.FailedToFindRequiredPackage, null, "Failed to find package '{0}'.", pkgName);
@@ -341,7 +342,7 @@ namespace CoApp.Autopackage {
                     // makes sure it takes the latest one that matches. Hey, if you wanted an earlier one, you'd say explicitly :p
                     var pkg = packages.OrderByDescending(each => each.Version).FirstOrDefault();
 
-                    // Console.WriteLine("Package Dependency: {0} -> {1}", pkg.CanonicalName, pkg.ProductCode);
+                    // Console.WriteLine("Package Dependency: {0}", pkg.CanonicalName);
 
                     AutopackageMain.PackageManager.GetPackageDetails(pkg.CanonicalName).Wait();
 
@@ -354,10 +355,10 @@ namespace CoApp.Autopackage {
             }
 
             foreach (var pkg in DependentPackages) {
-                if (PackageDependencies == null ) {
-                    PackageDependencies = new List<string>();
+                if (Dependencies == null ) {
+                    Dependencies = new XDictionary<CanonicalName, XList<Uri>>();
                 }
-                PackageDependencies.Add(pkg.CanonicalName);
+                Dependencies.Add(pkg.CanonicalName, pkg.Feeds.ToXList());
                 // also, add that package's atom feed items to this package's feed.
                 if(! string.IsNullOrEmpty(pkg.PackageItemText) ) {
                     var item = SyndicationItem.Load<AtomItem>(XmlReader.Create(new StringReader(pkg.PackageItemText)));
@@ -592,13 +593,13 @@ namespace CoApp.Autopackage {
 
             var locations = Source.PackageRules.GetPropertyValues("location").Union(Source.PackageRules.GetPropertyValues("locations"));
             if( !locations.IsNullOrEmpty()) {
-                Locations = new List<Uri>();
+                Locations = new XList<Uri>();
                 Locations.AddRange(locations.Select(location => location.ToUri()).Where(uri => uri != null));
             }
 
             var feeds = Source.PackageRules.GetPropertyValues("feed").Union(Source.PackageRules.GetPropertyValues("feeds"));
             if (!feeds.IsNullOrEmpty()) {
-                Feeds = new List<Uri>();
+                Feeds = new XList<Uri>();
                 Feeds.AddRange(feeds.Select(feed => feed.ToUri()).Where(uri => uri != null));
             }
 
@@ -751,8 +752,10 @@ namespace CoApp.Autopackage {
             }
 
             if (maximum > 0L) {
-                BindingPolicyMinVersion = minimum;
-                BindingPolicyMaxVersion = maximum;
+                BindingPolicy = new BindingPolicy {
+                    Minimum = minimum, 
+                    Maximum = maximum
+                };
 
                 CreateNativeAssemblyPolicies();
                 CreateManagedAssemblyPolicies();
@@ -785,7 +788,7 @@ namespace CoApp.Autopackage {
             }
 
             
-            ChildIcons = DependentPackages.ToDictionary(each => each.ProductCode, each => each.Icon);
+            ChildIcons = DependentPackages.ToXDictionary(each => each.CanonicalName.ToString(), each => each.Icon);
 
             var licenses = Source.MetadataRules.GetPropertyValues("licenses");
             if( licenses.Any()) {

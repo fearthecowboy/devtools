@@ -14,6 +14,7 @@ namespace CoApp.ToolScanner {
     using System.Text.RegularExpressions;
     using System.Xml.Linq;
     using CoApp.Toolkit.Extensions;
+    using Toolkit.Collections;
     using Toolkit.DynamicXml;
     using Toolkit.Utility;
     using Toolkit.Win32;
@@ -259,7 +260,7 @@ It looks for Microsoft, Cygwin, MinGW, Watcom, Borland, IBM intel compilers.
 
                 Console.WriteLine("Uploading...");
 
-                var d = new Dictionary<string, string>();
+                var d = new XDictionary<string, string>();
 
                 d.Add("data", xmldoc.Node.ToString());
 

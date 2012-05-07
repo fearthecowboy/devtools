@@ -20,6 +20,7 @@ namespace CoApp.Ptk {
     using Developer.Toolkit.Exceptions;
     using Developer.Toolkit.Scripting.Languages.PropertySheet;
     using Packaging.Client;
+    using Toolkit.Collections;
     using Toolkit.Exceptions;
     using Toolkit.Extensions;
     using Toolkit.Utility;
@@ -133,7 +134,7 @@ pTK [options] action [buildconfiguration...]
         /// </summary>
         private bool _verbose;
         private bool _skipBuilt;
-        private Dictionary<string, string> _originalEnvironment = GetEnvironment();
+        private XDictionary<string, string> _originalEnvironment = GetEnvironment();
         /// <summary>
         /// Tell the user which tools we are using?
         /// </summary>
@@ -164,9 +165,9 @@ pTK [options] action [buildconfiguration...]
         /// Character limit for path on Vista is 1024 http://support.microsoft.com/kb/924032
         /// </remarks>
         /// <returns>A dictionary of path variables as strings</returns>
-        private static Dictionary<string, string> GetEnvironment() {
+        private static XDictionary<string, string> GetEnvironment() {
             var env = Environment.GetEnvironmentVariables();
-            return env.Keys.Cast<object>().ToDictionary(key => key.ToString(), key => env[key].ToString());
+            return env.Keys.Cast<object>().ToXDictionary(key => key.ToString(), key => env[key].ToString());
         }
 
         /// <summary>
@@ -1053,7 +1054,7 @@ REM ===================================================================
                 try {
                     // set environment variables:
                     var savedVariables = _originalEnvironment;
-                    _originalEnvironment = new Dictionary<string, string>(savedVariables);
+                    _originalEnvironment = new XDictionary<string, string>(savedVariables);
 
                     var sets = build["set"];
                     if (sets != null) {
@@ -1189,8 +1190,8 @@ REM ===================================================================
         }
 
         /*
-       private Dictionary<string,string> ExternalChildBuilds( Rule build ) {
-           var result = new Dictionary<string, string>();
+       private IDictionary<string,string> ExternalChildBuilds( Rule build ) {
+           var result = new XDictionary<string, string>();
            
            var uses = build["uses"];
            if (uses != null) {
@@ -1292,7 +1293,7 @@ REM ===================================================================
             foreach (var build in builds) {
                 // set environment variables:
                 var savedVariables = _originalEnvironment;
-                _originalEnvironment = new Dictionary<string, string>(savedVariables);
+                _originalEnvironment = new XDictionary<string, string>(savedVariables);
 
                 var sets = build["set"];
                 if (sets != null) {
@@ -1310,7 +1311,7 @@ REM ===================================================================
                 if( requires != null ) {
                     foreach( var pkg in requires.Values ) {
                         Console.WriteLine("Looking for {0}", pkg);
-                        var installedPkgs = _easy.GetPackages(pkg, installed:true).Result;
+                        var installedPkgs = _easy.QueryPackages(pkg, installed: true).Result;
                         if( !installedPkgs.Any()) {
                             // there isn't a matching installed package, we'd better install one.
                             // refresh the feeds, as a package dependency might have recently been built...
@@ -1318,7 +1319,7 @@ REM ===================================================================
                                 _easy.AddSessionFeed(feed);
                             }
 
-                            var pkgToInstall = _easy.GetPackages(pkg, installed: false, latest: true).Result;
+                            var pkgToInstall = _easy.QueryPackages(pkg, installed: false, latest: true).Result;
                             bool failed = false;
                             _easy.InstallPackage(pkgToInstall.First().CanonicalName, autoUpgrade: true).Wait();
 
@@ -1368,7 +1369,7 @@ REM ===================================================================
         private bool CheckTargets(Rule build, bool haltOnFail = true ) {
             // we need the environment set correctly here.
             var savedVariables = _originalEnvironment;
-            _originalEnvironment = new Dictionary<string, string>(savedVariables);
+            _originalEnvironment = new XDictionary<string, string>(savedVariables);
             
             var sets = build["set"];
             if (sets != null) {
@@ -1574,6 +1575,7 @@ REM ===================================================================
     }
 
     public static class DictionaryExtension {
+        /*
         public static TValue AddOrSet<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value) where TValue : class {
             if( dictionary.ContainsKey(key) ) {
                 dictionary[key] = value;
@@ -1582,7 +1584,7 @@ REM ===================================================================
             }
             return value;
         }
-
+        */
         public static string NormalizePlatform( this string platform ) {
             if (string.IsNullOrEmpty(platform)) {
                 return "x86";

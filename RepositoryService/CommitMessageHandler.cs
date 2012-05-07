@@ -24,8 +24,8 @@ namespace CoApp.RepositoryService {
         private Tweeter _tweeter;
         private ProcessUtility _cmdexe = new ProcessUtility("cmd.exe");
         private ProcessUtility _robocopy = new ProcessUtility("robocopy.exe");
-        private Dictionary<string, string> _aliases;
-        public CommitMessageHandler(string twitterHandle, Dictionary<string,string> aliases) {
+        private IDictionary<string, string> _aliases;
+        public CommitMessageHandler(string twitterHandle, IDictionary<string,string> aliases) {
             if( !string.IsNullOrEmpty(twitterHandle) ) {
                 _tweeter = new Tweeter(twitterHandle);
             }

@@ -52,7 +52,7 @@ OAuthTool [options] <service>
         }
 
         private int main(string[] args) {
-            var options = new EasyDictionary<string, IEnumerable<string>>(args.Where(each => each.StartsWith("--")).Switches());
+            var options = new XDictionary<string, IEnumerable<string>>(args.Where(each => each.StartsWith("--")).Switches());
             var parameters = args.Parameters().ToArray();
 
             #region Parse Options

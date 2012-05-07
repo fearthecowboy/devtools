@@ -19,6 +19,7 @@ namespace CoApp.Autopackage {
     using Developer.Toolkit.Scripting.Languages.PropertySheet;
     using Packaging.Client;
     using Properties;
+    using Toolkit.Collections;
     using Toolkit.Exceptions;
     using Toolkit.Extensions;
     using Toolkit.Tasks;
@@ -98,7 +99,7 @@ namespace CoApp.Autopackage {
             CollectRoleRules();
         }
 
-        internal Dictionary<string, string> MacroValues = new Dictionary<string, string>();
+        internal IDictionary<string, string> MacroValues = new XDictionary<string, string>();
 
         internal string PostprocessValue(string value) {
             if (!string.IsNullOrEmpty(value) && value.Contains("[]")) {

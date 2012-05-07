@@ -21,6 +21,7 @@ namespace CoApp.Developer.Toolkit.Publishing {
     using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
+    using CoApp.Toolkit.Collections;
     using CoApp.Toolkit.Crypto;
     using CoApp.Toolkit.Exceptions;
     using CoApp.Toolkit.Extensions;
@@ -34,8 +35,8 @@ namespace CoApp.Developer.Toolkit.Publishing {
     using Resource = ResourceLib.Resource;
 
     public class Binary {
-        private static readonly Dictionary<string, Task<Binary>> LoadingTasks = new Dictionary<string, Task<Binary>>();
-        private static readonly Dictionary<string, Binary> LoadedFiles = new Dictionary<string, Binary>();
+        private static readonly IDictionary<string, Task<Binary>> LoadingTasks = new XDictionary<string, Task<Binary>>();
+        private static readonly IDictionary<string, Binary> LoadedFiles = new XDictionary<string, Binary>();
 
         public static bool IsAnythingStillLoading {
             get {

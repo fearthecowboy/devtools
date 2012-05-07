@@ -18,6 +18,7 @@ namespace CoApp.RepositoryService {
     using System.Resources;
     using System.Threading;
     using Properties;
+    using Toolkit.Collections;
     using Toolkit.Configuration;
     using Toolkit.Console;
     using Toolkit.Extensions;
@@ -54,7 +55,7 @@ namespace CoApp.RepositoryService {
 
             var options = args.Where(each => each.StartsWith("--")).Switches();
             var parameters = args.Where(each => !each.StartsWith("--")).Parameters();
-            var aliases = new Dictionary<string, string>();
+            var aliases = new XDictionary<string, string>();
 
             foreach (var arg in options.Keys) {
                 var argumentParameters = options[arg];

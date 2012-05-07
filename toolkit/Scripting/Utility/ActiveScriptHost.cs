@@ -16,6 +16,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Utility {
     using System.Collections.Generic;
     using System.Reflection;
     using System.Runtime.InteropServices;
+    using CoApp.Toolkit.Collections;
     using CoApp.Toolkit.Exceptions;
     using EXCEPINFO = System.Runtime.InteropServices.ComTypes.EXCEPINFO;
 
@@ -32,7 +33,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Utility {
         private object scriptEngine;
         private int returnValue;
         private readonly ScriptLanguage scriptLanguage;
-        private readonly Dictionary<string, object> visibleGlobalMembers = new Dictionary<string, object>();
+        private readonly IDictionary<string, object> visibleGlobalMembers = new XDictionary<string, object>();
 
         private IActiveScript ActiveScript {
             get { return (scriptEngine as IActiveScript); }
@@ -90,7 +91,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Utility {
 
         #endregion
 
-        public Dictionary<string, object> GlobalMembers {
+        public IDictionary<string, object> GlobalMembers {
             get { return visibleGlobalMembers; }
         }
 

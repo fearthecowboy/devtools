@@ -22,6 +22,7 @@ namespace CoApp.RepositoryService {
     using Packaging.Client;
     using Packaging.Common;
     using Packaging.Common.Model.Atom;
+    using Toolkit.Collections;
     using Toolkit.Extensions;
     using Toolkit.Tasks;
     using System.ServiceModel.Syndication;
@@ -89,7 +90,7 @@ namespace CoApp.RepositoryService {
                     File.WriteAllBytes(filename, data);
 
                     // verify that the file is actually a valid package
-                    PackageManager.GetPackages(filename).ContinueWith(
+                    PackageManager.QueryPackages(filename).ContinueWith(
                         antecedent => {
                             if( antecedent.IsFaulted ) {
                                 Console.WriteLine("Fault occurred after upload: {0}", filename);
@@ -177,7 +178,7 @@ namespace CoApp.RepositoryService {
 
                                     // first, make sure that the feeds contains the intended feed location.
                                     if (feedItem.Model.Feeds == null) {
-                                        feedItem.Model.Feeds = new List<Uri>();
+                                        feedItem.Model.Feeds = new XList<Uri>();
                                     }
 
                                     if (!feedItem.Model.Feeds.Contains(_canonicalFeedUrl)) {
@@ -185,7 +186,7 @@ namespace CoApp.RepositoryService {
                                     }
 
                                     if (feedItem.Model.Locations == null) {
-                                        feedItem.Model.Locations = new List<Uri>();
+                                        feedItem.Model.Locations = new XList<Uri>();
                                     }
 
                                     if (!feedItem.Model.Locations.Contains(location)) {

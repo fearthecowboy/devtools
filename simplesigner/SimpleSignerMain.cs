@@ -17,6 +17,7 @@ namespace CoApp.simplesigner {
     using System.Linq;
     using System.Threading.Tasks;
     using Developer.Toolkit.Publishing;
+    using Toolkit.Collections;
     using Toolkit.Extensions;
     using Toolkit.Win32;
 
@@ -346,7 +347,7 @@ Manifest Options:
             var failures = 0;
             try {
                 var allFiles = parameters.FindFilesSmarter().ToArray();
-                var origMD5 = new Dictionary<string, string>();
+                var origMD5 = new XDictionary<string, string>();
 
                 var loading = allFiles.Select(each =>
                     Binary.Load(each,

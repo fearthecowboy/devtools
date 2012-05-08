@@ -152,7 +152,7 @@ namespace CoApp.mkRepo {
 
             if (!string.IsNullOrEmpty(_input)) {
                 Logger.Message("Loading existing feed.");
-                if (_input.IsWebUrl()) {
+                if (_input.IsWebUri()) {
                     var inputFilename = "feed.atom.xml".GenerateTemporaryFilename();
 
                     var rf = new RemoteFile(_input, inputFilename, (uri) => {

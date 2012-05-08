@@ -28,12 +28,14 @@ namespace CoApp.Bootstrapper {
     using Microsoft.Win32;
 
     internal class SingleStep {
+        public static string MIN_COAPP_VERSION_STRING = "1.2.0.228";
+
+        public static ulong INCOMPATIBLE_VERSION = VersionStringToUInt64("1.2.0.228");
+
         /// <summary>
         ///   This is the version of coapp that must be installed for the bootstrapper to continue. This should really only be updated when there is breaking changes in the client library
         /// </summary>
-        public const string MIN_COAPP_VERSION = "1.2.0.165";
-
-        public const string INCOMPATIBLE_VERSION = "1.2.0.164";
+        public static ulong MIN_COAPP_VERSION = Math.Max(VersionStringToUInt64(MIN_COAPP_VERSION_STRING), INCOMPATIBLE_VERSION);
 
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
@@ -109,7 +111,6 @@ namespace CoApp.Bootstrapper {
                             }
                         }
                     }
-
 
                     // if this installer is present, this will exit right after.
                     if (IsCoAppInstalled) {
@@ -208,8 +209,27 @@ namespace CoApp.Bootstrapper {
             return (((UInt64)major) << 48) + (((UInt64)minor) << 32) + (((UInt64)build) << 16) + (UInt64)revision;
         }
 
-        internal static bool IsIncompatibleVersionInstalled {
+        internal static bool IsIncompatibleCoAppInstalled {
             get {
+                try {
+                    // look for old versions of the coapp that are too old.
+                    foreach (var ace in new [] {"CoApp.Toolkit" , "CoApp.Client", "CoApp.Toolit.Engine.Client" }.Select(asmName => new AssemblyCacheEnum(asmName))) {
+                        string assembly;
+                        while ((assembly = ace.GetNextAssembly()) != null) {
+                            var parts = assembly.Split(", ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+                            // find the "version=" part
+                            if ((from p in parts
+                                select p.Split('=')
+                                into kvp
+                                where kvp[0].Equals("Version", StringComparison.InvariantCultureIgnoreCase)
+                                select VersionStringToUInt64(kvp[1])).Any(installed => installed <= INCOMPATIBLE_VERSION)) {
+                                return true;
+                            }
+                        }
+                    }
+                } catch {
+                    
+                }
                 return false;
             }
         }
@@ -217,7 +237,6 @@ namespace CoApp.Bootstrapper {
         internal static bool IsCoAppInstalled {
             get {
                 try {
-                    var requiredVersion = VersionStringToUInt64(MIN_COAPP_VERSION);
                     var ace = new AssemblyCacheEnum("CoApp.Client");
                     string assembly;
                     while ((assembly = ace.GetNextAssembly()) != null) {
@@ -226,7 +245,7 @@ namespace CoApp.Bootstrapper {
                         if ((from p in parts
                             select p.Split('=')
                             into kvp where kvp[0].Equals("Version", StringComparison.InvariantCultureIgnoreCase)
-                            select VersionStringToUInt64(kvp[1])).Any(installed => installed >= requiredVersion)) {
+                            select VersionStringToUInt64(kvp[1])).Any(installed => installed >= MIN_COAPP_VERSION)) {
                             return true;
                         }
                     }
@@ -248,7 +267,9 @@ namespace CoApp.Bootstrapper {
         }
 
         /// <summary>
-        ///   Ok, So I think I need to explain what the hell I'm doing here. Once the bootstrapper has got the toolkit actually installed, we want to launch the installer in a new appdomain in the current process. Unfortunately, the first run of the engine can take a bit of time to walk thru the list of MSI files in the windows/installer directory So, we first create the InstallerPrep type in the new AppDomain, and abuse the IComparable interface to get back an int so we can spin on the progress of the engine running thru the MSI files. Once that's done, we create the Installer object and exit this process once it's finished whatever its doing. Yeah, kinda lame, but it saves me from having to define a new interface that both the engine and bootstrapper will have. :p
+        ///   Ok, So I think I need to explain what the hell I'm doing here. 
+        ///  Once the bootstrapper has got the toolkit actually installed,
+        ///  we want to launch the installer in a new appdomain in the current process.
         /// </summary>
         /// <param name="bypassingBootstrapUI"> </param>
         /// <returns> </returns>
@@ -329,7 +350,7 @@ namespace CoApp.Bootstrapper {
 
               
                 // meh. use strong named assembly
-                appDomain.CreateInstanceAndUnwrap("CoApp.Client, Version=" + MIN_COAPP_VERSION + ", Culture=neutral, PublicKeyToken=1e373a58e25250cb",
+                appDomain.CreateInstanceAndUnwrap("CoApp.Client, Version=" + MIN_COAPP_VERSION_STRING + ", Culture=neutral, PublicKeyToken=1e373a58e25250cb",
                     "CoApp.Packaging.Client.UI.Installer", false, BindingFlags.Default, null, new[] { MsiFilename }, null, null);
                 // since we've done everything we need to do, we're out of here. Right Now.
             } catch (Exception e) {
@@ -594,13 +615,59 @@ namespace CoApp.Bootstrapper {
                         // if this is the CoApp MSI, we don't need to fetch the CoApp MSI.
                         if (!IsCoAppToolkitMSI(MsiFilename)) {
                             // get coapp.toolkit.msi
-                            file = AcquireFile("CoApp.Toolkit.msi", percentDownloaded => CoAppPackageDownload.Progress = percentDownloaded);
+                            file = AcquireFile("CoApp.msi", percentDownloaded => CoAppPackageDownload.Progress = percentDownloaded);
                             CoAppPackageDownload.Progress = 100;
 
                             if (!IsCoAppToolkitMSI(file)) {
                                 MainWindow.Fail(LocalizedMessage.IDS_UNABLE_TO_ACQUIRE_COAPP_INSTALLER, "Unable to download the CoApp Installer MSI");
                                 return;
                             }
+                        }
+
+                        // if you have an incompatible version of CoApp, we need to block on removing it.
+                        if (IsIncompatibleCoAppInstalled) {
+                            
+                            var okToProceed = new ManualResetEvent(false);
+                            MainWindow.WhenReady += () => {
+                                MainWindow.MainWin.Opacity = 0;
+                                var answer = new PopupQuestion(
+                                    @"The CoApp Package Manager you have installed is incompatible 
+with the latest availible packages, and must be removed and 
+replaced with a newer version in order to continue.
+
+This will remove the existing CoApp installation and all packages 
+that are currently installed.", "Stop, don't continue", "Yes, Upgrade CoApp").ShowDialog() == true;
+                                
+                                if( !answer ) {
+                                    ExitQuick();
+                                }
+                                else {
+                                    okToProceed.Set();
+                                    MainWindow.MainWin.Opacity = 1;
+                                }
+                            };
+
+                            okToProceed.WaitOne();
+
+                            // bring down the cleaner, and let it do the nasty.
+                            var cleanerExe = AcquireFile("coapp.cleaner.exe");
+                            if( string.IsNullOrEmpty(cleanerExe)) {
+                                MainWindow.Fail(LocalizedMessage.IDS_UNABLE_TO_ACQUIRE_COAPP_CLEANER, "Unable to download the CoApp Cleaner Utility.");
+                                return;
+                            }
+
+                            var cleanerProc = Process.Start(cleanerExe, "--auto");
+                            if (cleanerProc != null) {
+                                cleanerProc.WaitForExit();
+                            }
+
+                            if (IsIncompatibleCoAppInstalled) {
+                                // we've failed to clean out the old version of CoApp.
+                                MainWindow.Fail(LocalizedMessage.IDS_UNABLE_TO_CLEAN_COAPP, "Unable to clean out the old versions of CoApp.");
+                                return;
+                            }
+
+                            // by this time, the old versions of coapp should be removed. 
                         }
 
                         // We made it past downloading.
@@ -742,10 +809,9 @@ namespace CoApp.Bootstrapper {
 
                     NativeMethods.MsiCloseHandle(hProduct);
 
-                    var requiredVersion = VersionStringToUInt64(MIN_COAPP_VERSION);
                     var pkgVersion = VersionStringToUInt64(sb3.ToString());
 
-                    if ( pkgVersion >= requiredVersion && sb.ToString().ToLower().Equals("coapp.toolkit")) {
+                    if ( pkgVersion >= MIN_COAPP_VERSION && sb.ToString().ToLower().Equals("coapp")) {
                         MsiCanonicalName = sb2.ToString();
                         return true;
                     }

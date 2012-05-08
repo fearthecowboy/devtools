@@ -39,6 +39,8 @@ namespace CoApp.Bootstrapper {
         IDS_CANCELLING,
         IDS_MSI_FILE_NOT_FOUND,
         IDS_MSI_FILE_NOT_VALID,
+        IDS_UNABLE_TO_ACQUIRE_COAPP_CLEANER,
+        IDS_UNABLE_TO_CLEAN_COAPP,
     }
 
     /// <summary>
@@ -176,12 +178,12 @@ namespace CoApp.Bootstrapper {
             // stop the download/install...
             if (!SingleStep.Cancelling) {
                 // check first.
-                if (new AreYouSure().ShowDialog() != true) {
+                if (new PopupQuestion("Would you like to cancel installing the software?", "Continue Installation", "Cancel Installation").ShowDialog() == true) {
                     SingleStep.Cancelling = true; // prevents any other errors/messages.
                     // wait for MSI to clean up ?
                     while (SingleStep.InstallTask != null) {
                         SingleStep.InstallTask.Wait(60);
-                    }
+                    }   
                     Application.Current.Shutdown();
                 }
             } else {

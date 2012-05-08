@@ -312,7 +312,7 @@ namespace CoApp.Autopackage {
             // explictly defined
             DependentPackages = new List<Package>();
 
-            if( !Name.Equals("coapp.toolkit", StringComparison.CurrentCultureIgnoreCase) ) {
+            if( !Name.Equals("coapp", StringComparison.CurrentCultureIgnoreCase) ) {
                 // don't auto-add the coapp.toolkit dependency for the toolkit itself.
                 var toolkitPackage = AutopackageMain.PackageManager.QueryPackages(CanonicalName.CoAppItself, null, null, null, null, null, null, null, null, null, false).Result.OrderByDescending(each => each.Version).FirstOrDefault();
                 
@@ -358,14 +358,7 @@ namespace CoApp.Autopackage {
                 if (Dependencies == null ) {
                     Dependencies = new XDictionary<CanonicalName, XList<Uri>>();
                 }
-                Dependencies.Add(pkg.CanonicalName, pkg.Feeds.ToXList());
-                // also, add that package's atom feed items to this package's feed.
-                if(! string.IsNullOrEmpty(pkg.PackageItemText) ) {
-                    var item = SyndicationItem.Load<AtomItem>(XmlReader.Create(new StringReader(pkg.PackageItemText)));
-                    AtomFeed.Add(item);
-                } else {
-                    Console.WriteLine("Missing Dependency Information {0}", pkg.Name);
-                }
+                Dependencies.Add(pkg.CanonicalName, pkg.Feeds.Where( each => each.IsWebUri()).ToXList());
             }
 
             // implicitly defined (check all binaries, to see what they depend on)

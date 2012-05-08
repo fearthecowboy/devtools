@@ -130,7 +130,7 @@ namespace CoApp.RepositoryService {
 
                                 if (pkg.CanonicalName.Matches(CanonicalName.CoAppItself)) {
                                     // update the default toolkit too
-                                    _cloudFileSystem.WriteBlob(_packageStorageFolder, "coapp.toolkit.msi", filename, false, (progress) => {
+                                    _cloudFileSystem.WriteBlob(_packageStorageFolder, "coapp.msi", filename, false, (progress) => {
                                         ConsoleExtensions.PrintProgressBar("{0} => {1}".format(_localfeedLocation, _packageStorageFolder), progress);
                                     });
                                     Console.WriteLine();

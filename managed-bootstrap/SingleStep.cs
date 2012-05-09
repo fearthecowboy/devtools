@@ -28,9 +28,9 @@ namespace CoApp.Bootstrapper {
     using Microsoft.Win32;
 
     internal class SingleStep {
-        public static string MIN_COAPP_VERSION_STRING = "1.2.0.228";
-
-        public static ulong INCOMPATIBLE_VERSION = VersionStringToUInt64("1.2.0.228");
+        public static string MIN_COAPP_VERSION_STRING = "1.2.0.240";
+        public static bool IsForcingCoappToClean = true;
+        public static ulong INCOMPATIBLE_VERSION = VersionStringToUInt64("1.2.0.240");
 
         /// <summary>
         ///   This is the version of coapp that must be installed for the bootstrapper to continue. This should really only be updated when there is breaking changes in the client library
@@ -78,6 +78,19 @@ namespace CoApp.Bootstrapper {
         [LoaderOptimization(LoaderOptimization.MultiDomainHost)]
         public static void Main(string[] args) {
             var commandline = args.Aggregate(string.Empty, (current, each) => current + " \"" + each + "\"").Trim();
+            if (args.Length > 1) {
+
+                foreach (var split in args.Skip(1).Select(a => a.ToLower().Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries)).Where(split => split.Length >= 2)) {
+                    if (split[0] == "--uilevel") {
+                        Quiet = split[1] == "2";
+                        Passive = split[1] == "3";
+                    }
+
+                    if (split[0] == "--remove") {
+                        Remove = !string.IsNullOrEmpty(split[1]);
+                    }
+                }
+            }
             ElevateSelf(commandline);
 
             Logger.Warning("Startup :" + commandline);
@@ -98,25 +111,20 @@ namespace CoApp.Bootstrapper {
                     MsiFilename = Path.GetFullPath(args[0]);
                     MsiFolder = Path.GetDirectoryName(MsiFilename);
 
-                    if( args.Length > 1 ) {
+                   
 
-                        foreach (var split in args.Skip(1).Select(a => a.ToLower().Split(new[] {'='}, StringSplitOptions.RemoveEmptyEntries)).Where(split => split.Length >= 2)) {
-                            if( split[0] == "--uilevel" ) {
-                                Quiet = split[1] == "2";
-                                Passive= split[1] == "3";
-                            }
+                    // if we're installing coapp itself and we're forcing reinstall
+                    // skip right down to installcoapp.
+                    if ( !(IsForcingCoappToClean && IsCoAppToolkitMSI(MsiFilename)) ) {
 
-                            if(split[0] == "--remove") {
-                                Remove = !string.IsNullOrEmpty(split[1]);
-                            }
+                        // if this installer is present, this will exit right after.
+                        if (IsCoAppInstalled) {
+                            RunInstaller(true);
+                            return;
                         }
+                        
                     }
 
-                    // if this installer is present, this will exit right after.
-                    if (IsCoAppInstalled) {
-                        RunInstaller(true);
-                        return;
-                    }
 
                     // if CoApp isn't there, we gotta get it.
                     // this is a quick call, since it spins off a task in the background.
@@ -172,7 +180,7 @@ namespace CoApp.Bootstrapper {
 
             // we're not an admin I guess.
             try {
-                new Process {
+                var process = new Process {
                     StartInfo = {
                         UseShellExecute = true,
                         WorkingDirectory = Environment.CurrentDirectory,
@@ -183,7 +191,16 @@ namespace CoApp.Bootstrapper {
                         ErrorDialogParentHandle = GetForegroundWindow(),
                         WindowStyle = ProcessWindowStyle.Maximized,
                     }
-                }.Start();
+                };
+
+                if (!process.Start()) {
+                    throw new Exception();
+                }
+
+                if( Quiet || Passive ) {
+                    process.WaitForExit();
+                }
+
                 Environment.Exit(0); // since this didn't throw, we know the kids got off to school ok. :)
             } catch {
                 MainWindow.Fail(LocalizedMessage.IDS_REQUIRES_ADMIN_RIGHTS, "The installer requires administrator permissions.");
@@ -524,22 +541,29 @@ namespace CoApp.Bootstrapper {
         }
 
         internal static bool ValidFileExists(string fileName) {
-            Logger.Message("Checking for file: " + fileName);
+            
             if (!String.IsNullOrEmpty(fileName) && File.Exists(fileName)) {
                 try {
-#if DEBUG
-                    Logger.Message("   Validity RESULT (assumed): True");
+#if DEBUGx
                     return true;
 #else
+                    var fvi = FileVersionInfo.GetVersionInfo(fileName);
+                    if( !string.IsNullOrEmpty(fvi.FileVersion)) {
+                        var fv = VersionStringToUInt64(fvi.FileVersion);
+                        if( fv != 0 && fv < MIN_COAPP_VERSION ) {
+                            return false;
+                        }
+                    }
                     var wtd = new WinTrustData(fileName);
                     var result = NativeMethods.WinVerifyTrust(new IntPtr(-1), new Guid("{00AAC56B-CD44-11d0-8CC2-00C04FC295EE}"), wtd);
-                    Logger.Message("    RESULT (a): " + (result == WinVerifyTrustResult.Success));
+                    if( result == WinVerifyTrustResult.Success ) {
+                        Logger.Message("Found Valid file {0}: " , fileName);
+                    }
                     return (result == WinVerifyTrustResult.Success);
 #endif
                 } catch {
                 }
             }
-            Logger.Message("    RESULT (a): False");
             return false;
         }
 
@@ -625,7 +649,8 @@ namespace CoApp.Bootstrapper {
                         }
 
                         // if you have an incompatible version of CoApp, we need to block on removing it.
-                        if (IsIncompatibleCoAppInstalled) {
+                        // and for now, if you install coapp toolkit via the bootstrapper, we force wipe.
+                        if (IsIncompatibleCoAppInstalled || (IsForcingCoappToClean && IsCoAppToolkitMSI(MsiFilename) )) {
                             
                             var okToProceed = new ManualResetEvent(false);
                             MainWindow.WhenReady += () => {

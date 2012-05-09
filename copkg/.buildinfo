@@ -38,8 +38,9 @@ package {
     uses : sign;
     build-command: @"
         cscript //e:jscript scripts\increment-build-version.js
-        REM Add the coapp tools folder to the end of the path, in case we don't have the tools in the path
-        PATH=%PATH%;%CD%\ext\tools
+        REM Add the newly built folder to the path, 
+        REM And coapp tools folder to the end of the path, in case we don't have the tools available.
+        PATH=%CD%\output\any\Release\bin\;%PATH%;%CD%\ext\tools
         
         cd copkg
         autopackage coapp.devtools.autopkg  || goto failed

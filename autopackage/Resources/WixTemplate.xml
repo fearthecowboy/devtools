@@ -45,7 +45,7 @@
         <CostFinalize Sequence="1000"></CostFinalize>
         <InstallValidate Sequence="1400"></InstallValidate>
         <InstallInitialize Sequence="1500"></InstallInitialize>
-        <!--native boostrap used to be here. -->
+        
         <ProcessComponents Sequence="1600">COAPP OR REMOVE</ProcessComponents>
         <MsiUnpublishAssemblies Sequence="1750">COAPP OR REMOVE</MsiUnpublishAssemblies>
         <UnpublishFeatures Sequence="1800">COAPP OR REMOVE</UnpublishFeatures>
@@ -59,7 +59,6 @@
         <PublishFeatures Sequence="6300">COAPP</PublishFeatures>
         <PublishProduct Sequence="6400">COAPP</PublishProduct>
         
-        <!--managed boostrap used to be here. -->
         <InstallFinalize Sequence="6600"></InstallFinalize>
         <Custom Action="native_bootstrap_CA" After="InstallFinalize">NOT COAPP AND NOT REMOVE AND NOT NETFRAMEWORK40 AND (UILevel = 2 OR UILevel = 3)</Custom>
         <Custom Action="managed_bootstrap_CA" After="InstallFinalize">NOT COAPP AND NOT REMOVE AND NETFRAMEWORK40 AND (UILevel = 2 OR UILevel = 3)</Custom>

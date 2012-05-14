@@ -177,6 +177,7 @@ namespace CoApp.Autopackage {
         }
 
         private void AddFeedIcons() {
+#if disabled
             if (Model.IconImage != null) {
                 AddIcon("DEFAULT", Model.IconImage);
             }
@@ -190,6 +191,7 @@ namespace CoApp.Autopackage {
                     // Console.WriteLine("{0} --- {1}", e.Message,e.StackTrace);
                 }
             }
+#endif
         }
 
         private void AddIcon(string name, Image img) {

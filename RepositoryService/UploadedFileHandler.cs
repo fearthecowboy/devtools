@@ -90,7 +90,7 @@ namespace CoApp.RepositoryService {
                     File.WriteAllBytes(filename, data);
 
                     // verify that the file is actually a valid package
-                    PackageManager.QueryPackages(filename).ContinueWith(
+                    PackageManager.QueryPackages(filename, null, null, null).ContinueWith(
                         antecedent => {
                             if( antecedent.IsFaulted ) {
                                 Console.WriteLine("Fault occurred after upload: {0}", filename);

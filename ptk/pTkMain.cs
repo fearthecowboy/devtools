@@ -1312,7 +1312,7 @@ REM ===================================================================
                 if( requires != null ) {
                     foreach( var pkg in requires.Values ) {
                         Console.WriteLine("Looking for {0}", pkg);
-                        var installedPkgs = _easy.QueryPackages(pkg, Package.Properties.Installed.Is(true)).Result;
+                        var installedPkgs = _easy.QueryPackages(pkg, Package.Properties.Installed.Is(true), null, null).Result;
                         if( !installedPkgs.Any()) {
                             // there isn't a matching installed package, we'd better install one.
                             // refresh the feeds, as a package dependency might have recently been built...
@@ -1320,7 +1320,7 @@ REM ===================================================================
                                 _easy.AddSessionFeed(feed);
                             }
 
-                            var pkgToInstall = _easy.QueryPackages(pkg, Package.Properties.Installed.Is(false)).Result;
+                            var pkgToInstall = _easy.QueryPackages(pkg, Package.Properties.Installed.Is(false), null, null).Result;
                             bool failed = false;
                             _easy.InstallPackage(pkgToInstall.First().CanonicalName, autoUpgrade: true).Wait();
 

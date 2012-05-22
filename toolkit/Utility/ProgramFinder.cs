@@ -28,6 +28,76 @@ namespace CoApp.Toolkit.Utility {
     using Win32;
     using RegistryView = Configuration.RegistryView;
 
+#if NOT_READY
+    public class FileInformation {
+        public string FullPath { get; set; }
+        public string Filename { get; set; }
+        public string Extension { get; set; }
+        public FourPartVersion Version { get; set; }
+        public Architecture Architecture{ get; set; }
+        public string[] FolderList { get; set; }
+    }
+
+    public static class FileInformationExtensions {
+        public static string Remember( IEnumerable<FileInformation> files ) {
+            var result = files.FirstOrDefault();
+            if( result != null ) {
+                SetCachedPath( result.Filename, result.Version, result );
+                return result.FullPath;
+            }
+            return null;
+        }
+
+        public static string RememberFoundFile(IEnumerable<FileInformation> files) {
+            var result = files.FirstOrDefault();
+            if (result != null) {
+                
+                return result.FullPath;
+            }
+            return null;
+        }
+
+        private static string GetCachedPath(string tool, FourPartVersion minimumToolVersion,Architecture architecture) {
+            if( architecture == Architecture.Auto ) {
+                return (from arch in Architecture.Architectures
+                    let p = GetCachedPath(tool, minimumToolVersion, arch)
+                    where p != null
+                    select p)
+                    .FirstOrDefault();
+            }
+
+            var view = RegistryView.CoAppUser[@"Tools#{0}/{1}/{2}".format(tool, minimumToolVersion,architecture)];
+
+            var result = view.StringValue;
+
+            // if we've remembered that we've not found something...
+            if ("NOT-FOUND".Equals(result, StringComparison.CurrentCultureIgnoreCase)) {
+                return result;
+            }
+
+            if (null != result && !File.Exists(result)) {
+                view.StringValue = null;
+                result = null;
+            }
+
+            return result;
+        }
+
+
+      
+
+        /// <summary>
+        /// Save a tool to the registry
+        /// </summary>
+        /// <param name="toolEntry">Formatted tool entry</param>
+        /// <param name="location">Full path to the tool</param>
+        private static void SetCachedPath(string toolEntry, string location) {
+            Configuration.RegistryView.CoAppUser[@"Tools#" + toolEntry].StringValue = location;
+        }
+
+    }
+#endif 
+
     /// <summary>
     /// Utility to search for an executable in the file system
     /// </summary>
@@ -122,7 +192,19 @@ namespace CoApp.Toolkit.Utility {
         private static void AddCommonSearchLocations(string paths) {
             AddPathsToList(paths, ref _commonSearchLocations);
         }
+#if NOT_READY
+        public IEnumerable<FileInformation> this[string name, FourPartVersion version] { 
+            get {
+                return this[name, version, Architecture.Auto];
+            }
+        }
 
+        public IEnumerable<FileInformation> this[string name, FourPartVersion version, Architecture architecture] {
+            get {
+                return null;
+            }
+        }
+#endif
         /// <summary>
         /// Finds a tool in the file system
         /// </summary>
@@ -203,25 +285,29 @@ namespace CoApp.Toolkit.Utility {
                     _recursiveSearchLocations.AsParallel().SelectMany(
                         directory => directory.DirectoryEnumerateFilesSmarter("**\\"+filename, SearchOption.AllDirectories)));
 
+            
+
             if (executableType != ExecutableInfo.none || ver != 0) {
                 files =
-                    files.Where(
-                        file =>
+                    files.Where( file =>
                             (PEInfo.Scan(file).ExecutableInfo & executableType) == executableType &&
                                 PEInfo.Scan(file).FileVersionLong >= ver);
             }
-
+ 
             if (includeFilters != null) {
                 files = includeFilters.Aggregate(files, (current, filter) => (from eachFile in current
-                                                                              where eachFile.NewIsWildcardMatch(filter)
+                                                                              where eachFile.ToLower().NewIsWildcardMatch(filter.ToLower())
                                                                               select eachFile));
             }
+
 
             if (excludeFilters != null) {
                 files = excludeFilters.Aggregate(files, (current, filter) => (from eachFile in current
-                                                                              where !eachFile.NewIsWildcardMatch(filter)
+                                                                              where !eachFile.ToLower().NewIsWildcardMatch(filter.ToLower())
                                                                               select eachFile));
             }
+
+
 
             var filePath = files.MaxElement(each => PEInfo.Scan(each).FileVersionLong);
 

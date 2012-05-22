@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 11
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "autopackage", "autopackage.csproj", "{D1102D1E-7ACE-4A81-96B8-36DA12310001}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2C4DBA1B-1271-499E-B3F5-8F699CD75ADB} = {2C4DBA1B-1271-499E-B3F5-8F699CD75ADB}
@@ -66,6 +66,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OAuthTool", "OAuthTool.cspr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebugWatch", "DebugWatch.csproj", "{040B59F0-2C20-4603-AB6B-59D474B84F26}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Packaging", "Packaging.csproj", "{2356FC45-A1C0-40C5-B423-57CC4536AD18}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -76,6 +78,10 @@ Global
 		{040B59F0-2C20-4603-AB6B-59D474B84F26}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{040B59F0-2C20-4603-AB6B-59D474B84F26}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{040B59F0-2C20-4603-AB6B-59D474B84F26}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2356FC45-A1C0-40C5-B423-57CC4536AD18}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2356FC45-A1C0-40C5-B423-57CC4536AD18}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2356FC45-A1C0-40C5-B423-57CC4536AD18}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2356FC45-A1C0-40C5-B423-57CC4536AD18}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2C4DBA1B-1271-499E-B3F5-8F699CD75ADB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2C4DBA1B-1271-499E-B3F5-8F699CD75ADB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C4DBA1B-1271-499E-B3F5-8F699CD75ADB}.Release|Any CPU.ActiveCfg = Release|Any CPU

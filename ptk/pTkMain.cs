@@ -25,6 +25,7 @@ namespace CoApp.Ptk {
     using Toolkit.Extensions;
     using Toolkit.Linq;
     using Toolkit.Utility;
+    using Toolkit.Win32;
 
     internal class pTkMain {
         /// <summary>
@@ -678,24 +679,37 @@ pTK [options] action [buildconfiguration...]
                 C:\Program Files (x86)\Microsoft Visual Studio 8\VC\bin\amd64\vcvarsamd64.bat
                 C:\Program Files (x86)\Microsoft Visual Studio 8\VC\bin\x86_amd64\vcvarsx86_amd64.bat
              * VC7.0: C:\Program Files\Microsoft Visual Studio .NET\Vc7\bin\vcvars32.bat
-
-
              * */
+#if NOT_READY
 
-            _setenvcmd71 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("setenv.cmd", excludeFilters: new[] { @"\Windows Azure SDK\**" , "winddk**" }, includeFilters: new [] {"sdk**", "v7.1**"}, rememberMissingFile:true, tagWithCosmeticVersion:"7.1");
-            _setenvcmd7 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("setenv.cmd", excludeFilters: new[] { @"\Windows Azure SDK\**", "7.1**", "winddk**" }, includeFilters: new[] { "sdk**", "v7**" }, rememberMissingFile: true, tagWithCosmeticVersion: "7.0");
-            _setenvcmd6 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("setenv.cmd", excludeFilters: new[] { @"\Windows Azure SDK\**", "winddk**" }, includeFilters: new[] { "sdk**", "6**" }, rememberMissingFile: true, tagWithCosmeticVersion: "6");
+            var s71 = 
+                (from 
+                    file in ProgramFinder.ProgramFilesAndDotNetAndSdk["setenv.cmd" , "7.1"]
+                where 
+                    file.FolderList.ContainsAllAsWildcards("*sdk*", "v7.1") && 
+                    !file.FolderList.ContainsAnyAsWildcards("Windows Azure SDK", "winddk") 
+                select 
+                    file).Remember();
 
-            _wdksetenvcmd7600 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("setenv.bat", excludeFilters: new[] { @"\Windows Azure SDK\**"}, includeFilters: new[] { "winddk**"  }, rememberMissingFile: true, tagWithCosmeticVersion: "7600.16385.1");
+
+            var setEnvCmd71 = ProgramFinder.ProgramFilesAndDotNetAndSdk["setenv.cmd", "7.1"];
+#endif 
+
+
+            _setenvcmd71 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("setenv.cmd", excludeFilters: new[] { @"**\Windows Azure SDK\**" , "**winddk**" }, includeFilters: new [] {"**sdk**", "**v7.1**"}, rememberMissingFile:true, tagWithCosmeticVersion:"7.1");
+            _setenvcmd7 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("setenv.cmd", excludeFilters: new[] { @"**\Windows Azure SDK\**", "**7.1**", "**winddk**" }, includeFilters: new[] { "**sdk**", "**v7**" }, rememberMissingFile: true, tagWithCosmeticVersion: "7.0");
+            _setenvcmd6 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("setenv.cmd", excludeFilters: new[] { @"**\Windows Azure SDK\**", "**winddk**" }, includeFilters: new[] { "**sdk**", "**6**" }, rememberMissingFile: true, tagWithCosmeticVersion: "6");
+
+            _wdksetenvcmd7600 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("setenv.bat", excludeFilters: new[] { @"**\Windows Azure SDK\**"}, includeFilters: new[] { "**winddk**"  }, rememberMissingFile: true, tagWithCosmeticVersion: "7600.16385.1");
             
             /// SDK Setenv (sdk2003): c:\program files (x86)\Microsoft SDK\SetEnv.bat
 
-            _vcvarsallbat10 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "vc**", "10.0**" }, rememberMissingFile: true, tagWithCosmeticVersion: "10.0");
-            _vcvarsallbat9 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "vc**", "9.0**" }, rememberMissingFile: true, tagWithCosmeticVersion: "9.0");
-            _vcvarsallbat8 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "vc**", "8**" }, rememberMissingFile: true, tagWithCosmeticVersion: "8");
-            _vcvarsallbat7 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "vc**", "7.0**" }, rememberMissingFile: true, tagWithCosmeticVersion: "7.0");
-            _vcvarsallbat71 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "vc**", "7.1**" }, rememberMissingFile: true, tagWithCosmeticVersion: "7.1");
-            _vcvars32bat = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvars32.bat", includeFilters: new[] { "vc98**" }, rememberMissingFile: true, tagWithCosmeticVersion: "6");
+            _vcvarsallbat10 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "**vc**", "**10.0**" }, rememberMissingFile: true, tagWithCosmeticVersion: "10.0");
+            _vcvarsallbat9 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "**vc**", "**9.0**" }, rememberMissingFile: true, tagWithCosmeticVersion: "9.0");
+            _vcvarsallbat8 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "**vc**", "**8**" }, rememberMissingFile: true, tagWithCosmeticVersion: "8");
+            _vcvarsallbat7 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "**vc**", "**7.0**" }, rememberMissingFile: true, tagWithCosmeticVersion: "7.0");
+            _vcvarsallbat71 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "**vc**", "**7.1**" }, rememberMissingFile: true, tagWithCosmeticVersion: "7.1");
+            _vcvars32bat = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvars32.bat", includeFilters: new[] { "**vc98**" }, rememberMissingFile: true, tagWithCosmeticVersion: "6");
 
             // _originalEnvironment.AddOrSet("COAPP", "C:/programdata/");
             var sdks = new List<string>();

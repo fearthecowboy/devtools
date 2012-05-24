@@ -43,7 +43,7 @@ files[exes] {
     include: {
         "autopackage.exe",
         "debugwatch.exe",
-//        "mkrepo.exe",
+        "mkrepo.exe",
         "ptk.exe",
         "quicktool.exe",
         "scan.exe",

@@ -14,6 +14,7 @@
 namespace CoApp.RepositoryService {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Resources;
     using System.Threading;
@@ -41,11 +42,12 @@ namespace CoApp.RepositoryService {
             var ports = new int[] { 80 };
             var commitMessage = "trigger";
             var packageUpload = "upload";
+            var feeds = new string[]{};
             
-            string localfeedLocation = null;
+            string feedTempPathPrefix = null;
             string packageStoragePath = null;
             string packagePrefixUrl = null;
-            string canonicalFeedUrl = null;
+            string feedPrefixUrl = null;
 
             string tweetCommits = Settings["#tweet-commits"].StringValue;
             string tweetPackages = Settings["#tweet-packages"].StringValue;
@@ -83,19 +85,25 @@ namespace CoApp.RepositoryService {
                     case "help":
                         return Help();
 
-                    case "feed-path":
-                        localfeedLocation = last;
+                    case "feed-path-prefix":
+                        feedTempPathPrefix = last;
                         break;
 
-                    case "feed-url":
-                        canonicalFeedUrl = last;
+                    case "feed-prefix":
+                        feedPrefixUrl = last;
                         break;
 
+                    case "feed":
+                        feeds = argumentParameters.ToArray();
+                        break;
+                    
                     case "package-path":
+                        // if you store the packages locally on this server.
                         packageStoragePath = last;
                         break;
 
                     case "package-prefix":
+                        // where the package URL will be 
                         packagePrefixUrl = last;
                         break;
 
@@ -106,8 +114,8 @@ namespace CoApp.RepositoryService {
                     case "port":
                         ports = argumentParameters.Select(each => each.ToInt32()).ToArray();
                         break;
-                    
-                    case "package-upload":
+
+                    case "package-upload-prefix":
                         packageUpload = last;
                         break;
 
@@ -160,10 +168,12 @@ namespace CoApp.RepositoryService {
                 
                 listener.AddHandler(commitMessage, new CommitMessageHandler(tweetCommits, aliases));
 
-                if( string.IsNullOrEmpty(packageStoragePath) || string.IsNullOrEmpty(localfeedLocation) || string.IsNullOrEmpty(packagePrefixUrl)  ) {
+                if( string.IsNullOrEmpty(packageStoragePath) || string.IsNullOrEmpty(feedTempPathPrefix) || string.IsNullOrEmpty(packagePrefixUrl)  ) {
                     Console.WriteLine("[Package Uploader Disabled] specify must specify --package-path, --feed-path and  --package-prefix");
                 }else {
-                    listener.AddHandler(packageUpload, new UploadedFileHandler(localfeedLocation, canonicalFeedUrl, packageStoragePath, packagePrefixUrl, tweetPackages, cfs));
+                    foreach( var feed in feeds ) {
+                        listener.AddHandler(packageUpload.Slashed(feed), new UploadedFileHandler(Path.Combine(feedTempPathPrefix,feed), feedPrefixUrl.HttpSlashed(feed), packageStoragePath, packagePrefixUrl.HttpSlashed(), tweetPackages, cfs));
+                    }
                 }
                 listener.Start();
 

@@ -28,9 +28,9 @@ namespace CoApp.Bootstrapper {
     using Microsoft.Win32;
 
     internal class SingleStep {
-        public static string MIN_COAPP_VERSION_STRING = "1.2.0.303";
+        public static string MIN_COAPP_VERSION_STRING = "1.2.0.336";
         public static bool IsForcingCoappToClean = false;
-        public static ulong INCOMPATIBLE_VERSION = AssemblyCacheEnum.VersionStringToUInt64("1.2.0.300");
+        public static ulong INCOMPATIBLE_VERSION = AssemblyCacheEnum.VersionStringToUInt64("1.2.0.335");
         public static string[] AssemblyNames = {"CoApp.Toolkit", "CoApp.Client", "CoApp.Toolit.Engine.Client"};
         /// <summary>
         ///   This is the version of coapp that must be installed for the bootstrapper to continue. This should really only be updated when there is breaking changes in the client library
@@ -118,7 +118,7 @@ namespace CoApp.Bootstrapper {
 
                     // if we're installing coapp itself and we're forcing reinstall
                     // skip right down to installcoapp.
-                    if ( !IsIncompatibleCoAppInstalled && IsCoAppInstalled) {
+                    if ( !IsIncompatibleCoAppInstalled && IsCoAppInstalled ) {
                         RunInstaller(true);
                         return;
                     }
@@ -297,16 +297,16 @@ namespace CoApp.Bootstrapper {
                     };
                 });
 
-#if DEBUG_X
+#if DEBUG
             //var localAssembly = AcquireFile(@"c:\root\sync\coapp\output\any\debug\bin\CoApp.Client.dll");
             //Logger.Message("Local Assembly: " + localAssembly);
 
-            //if (!string.IsNullOrEmpty(localAssembly)) {
+            if( File.Exists(@"c:\root\coapp\coapp\output\any\debug\bin\CoApp.Client.dll")) {
                 // use the one found locally.
-                appDomain.CreateInstanceFromAndUnwrap(@"c:\root\sync\coapp\coapp\output\any\debug\bin\CoApp.Client.dll", "CoApp.Packaging.Client.UI.Installer", false, BindingFlags.Default, null, new[] { MsiFilename }, null, null);
+                appDomain.CreateInstanceFromAndUnwrap(@"c:\root\coapp\coapp\output\any\debug\bin\CoApp.Client.dll", "CoApp.Packaging.Client.UI.Installer", false, BindingFlags.Default, null, new[] {MsiFilename}, null, null);
                 // if it didn't throw here, we can assume that the CoApp service is running, and we can get to our assembly.
                 ExitQuick();
-            //}
+            }
 #endif
 
               

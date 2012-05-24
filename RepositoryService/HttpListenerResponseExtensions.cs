@@ -12,8 +12,11 @@
 
 
 namespace CoApp.RepositoryService {
+    using System;
+    using System.Linq;
     using System.Net;
     using System.Text;
+    using System.Text.RegularExpressions;
 
     public static class HttpListenerResponseExtensions {
         public static void WriteString( this HttpListenerResponse response, string format, params string[] args ) {
@@ -21,6 +24,34 @@ namespace CoApp.RepositoryService {
             var buffer = Encoding.UTF8.GetBytes(text);
             response.OutputStream.Write(buffer, 0, buffer.Length);
             response.OutputStream.Flush();
+        }
+
+        public static string ReplaceWhile(this string input, string from, string to) {
+            if (!string.IsNullOrEmpty(input)) {
+                while (input.Contains(from)) {
+                    input = input.Replace(from, to);
+                }
+            }
+            return input;
+        }
+
+        public static bool IsHttp(this string input) {
+            return (input ?? "").StartsWith("http://", StringComparison.OrdinalIgnoreCase) || input.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static string HttpSlashed(this string input, params string[] peices) {
+            input = input ?? "";
+            if (input.IsHttp()) {
+                ((peices ?? new string[0]).Aggregate((input ?? "").ReplaceWhile("//", "/").Trim('/', '\\'), (current, each) => current + "/" + (each ?? "").ReplaceWhile("//", "/").Trim('/', '\\')) + "/").ReplaceWhile("//", "/");
+            }
+            return "http://"+(((peices ?? new string[0]).Aggregate((input ?? "").ReplaceWhile("//", "/").Trim('/', '\\'), (current, each) => current + "/" + (each ?? "").ReplaceWhile("//", "/").Trim('/', '\\')) + "/").ReplaceWhile("//", "/"));
+        }
+
+        public static string Slashed(this string input, params string[] peices ) {
+            if( input.IsHttp() ) {
+                return input.HttpSlashed(peices);
+            }
+            return ("/" + (peices ?? new string[0]).Aggregate((input ?? "").ReplaceWhile("//", "/").Trim('/', '\\'), (current, each) => current + "/" + (each ?? "").ReplaceWhile("//", "/").Trim('/', '\\')) + "/").ReplaceWhile("//", "/");
         }
     }
 }

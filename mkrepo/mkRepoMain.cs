@@ -34,7 +34,7 @@ namespace CoApp.mkRepo {
         private string _input;
         private Uri _baseUrl;
         private Uri _feedLocation;
-        private IEnumerable<string> _packages;
+        private IEnumerable<string> _packageFiles;
 
         internal AtomFeed Feed;
 
@@ -128,7 +128,7 @@ namespace CoApp.mkRepo {
                     throw new ConsoleException(Resources.MissingCommand);
                 }
 
-                _packages = parameters.Skip(1);
+                _packageFiles = parameters.Skip(1);
 
                 switch (parameters.FirstOrDefault()) {
                     case "create":
@@ -177,21 +177,19 @@ namespace CoApp.mkRepo {
             if (originalFeed != null) {
                 Feed.Add(originalFeed.Items.Where(each => each is AtomItem).Select(each => each as AtomItem));
             }
+            ;
 
             Logger.Message("Selecting local packages");
-            var files = _packages.FindFilesSmarter();
 
-            _packageManager.QueryPackages(files,null,null,null).ContinueWith((antecedent) => {
-                var packages = antecedent.Result;
+            _packageManager.RecognizeFiles(_packageFiles.FindFilesSmarter()).Continue(packages => {
+                var names = packages.Select(each => each.CanonicalName); //  .ToArray();
+                
+                var feed = _packageManager.GetAtomFeed(names).Result;
 
-                foreach (var pkg in packages) {
-                    _packageManager.GetPackageDetails(pkg.CanonicalName).Wait();
-
-                    if (!string.IsNullOrEmpty(pkg.PackageItemText)) {
-                        var item = SyndicationItem.Load<AtomItem>(XmlReader.Create(new StringReader(pkg.PackageItemText)));
-
-                        var feedItem = Feed.Add(item);
-
+                foreach( var i in feed.Items) {
+                    var feedItem = i as AtomItem;
+                    if (feedItem != null) {
+                        var pkg = _packageManager.GetPackage(feedItem.Model.CanonicalName).Result;
                         // first, make sure that the feeds contains the intended feed location.
                         if (feedItem.Model.Feeds == null) {
                             feedItem.Model.Feeds = new XList<Uri>();
@@ -210,8 +208,9 @@ namespace CoApp.mkRepo {
                         if (!feedItem.Model.Locations.Contains(location)) {
                             feedItem.Model.Locations.Insert(0, location);
                         }
-                    } else {
-                        throw new ConsoleException("Missing ATOM data for '{0}'", pkg.Name);
+
+                        // add it to our feed.
+                        Feed.Add(feedItem);
                     }
                 }
             }).Wait();

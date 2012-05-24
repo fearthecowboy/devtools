@@ -34,8 +34,10 @@ namespace CoApp.RepositoryService {
         private readonly Uri _packagePrefixUrl;
         private readonly Uri _canonicalFeedUrl;
         private readonly CloudFileSystem _cloudFileSystem;
+        private readonly string _feedName;
 
-        public UploadedFileHandler(string localfeedLocation, string canonicalFeedUrl, string packageStoragePath, string packagePrefixUrl, string twitterHandle, CloudFileSystem cloudFileSystem) {
+        public UploadedFileHandler(string feedName, string localfeedLocation, string canonicalFeedUrl, string packageStoragePath, string packagePrefixUrl, string twitterHandle, CloudFileSystem cloudFileSystem) {
+            _feedName = feedName;
             _localfeedLocation = localfeedLocation.GetFullPath();
             _canonicalFeedUrl = new Uri(canonicalFeedUrl);
             _packageStorageFolder = packageStoragePath;
@@ -75,7 +77,7 @@ namespace CoApp.RepositoryService {
         }
         */
 
-        private static readonly PackageManager PackageManager = new PackageManager();
+        private static readonly PackageManager _packageManager = new PackageManager();
 
         public override Task Put(HttpListenerResponse response, string relativePath, byte[] data) {
             if( data.Length < 1 ) {
@@ -90,7 +92,7 @@ namespace CoApp.RepositoryService {
                     File.WriteAllBytes(filename, data);
 
                     // verify that the file is actually a valid package
-                    PackageManager.QueryPackages(filename, null, null, null).ContinueWith(
+                    _packageManager.QueryPackages(filename, null, null, null).ContinueWith(
                         antecedent => {
                             if( antecedent.IsFaulted ) {
                                 Console.WriteLine("Fault occurred after upload: {0}", filename);
@@ -116,10 +118,11 @@ namespace CoApp.RepositoryService {
                                 response.Close();
                                 return;
                             }
-
-                            var targetFilename = (pkg.CanonicalName + ".msi").ToLower();
+                            // foo[vc10]-1.2.3.4-x86
+                            var targetFilename = "{0}{1}-{2}-{3}.msi".format(pkg.CanonicalName.Name, pkg.CanonicalName.Flavor, pkg.CanonicalName.Version, pkg.CanonicalName.Architecture.InCanonicalFormat).ToLower();
+                            //  (pkg.CanonicalName.PackageName + ".msi").ToLower();
                             var location = new Uri(_packagePrefixUrl, targetFilename);
-                            PackageManager.GetPackageDetails(pkg.CanonicalName).Wait();
+                            _packageManager.GetPackageDetails(pkg.CanonicalName).Wait();
 
                             //copy the package to the destination
                             if (_cloudFileSystem != null) {
@@ -171,9 +174,8 @@ namespace CoApp.RepositoryService {
                                     Feed.Add(originalFeed.Items.Where(each => each is AtomItem).Select(each => each as AtomItem));
                                 }
 
-                                if (!string.IsNullOrEmpty(pkg.PackageItemText)) {
-                                    var item = SyndicationItem.Load<AtomItem>(XmlReader.Create(new StringReader(pkg.PackageItemText)));
-
+                                var item = _packageManager.GetAtomItem(pkg.CanonicalName).Result;
+                                if (item != null) {
                                     var feedItem = Feed.Add(item);
 
                                     // first, make sure that the feeds contains the intended feed location.

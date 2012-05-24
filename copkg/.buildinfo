@@ -105,8 +105,7 @@ sign {
         PATH=%PATH%;%CD%\ext\tools
      
         REM sign files in release directory
-        REM simplesigner --nologo  --sign --strong-name ""${release_dir}autopackage.exe"" ""${release_dir}debugwatch.exe"" ""${release_dir}Azure.exe"" ""${release_dir}CoApp.RepositoryService.exe"" ""${release_dir}mkRepo.exe"" ""${release_dir}pTk.exe"" ""${release_dir}QuickTool.exe"" ""${release_dir}Scan.exe"" ""${release_dir}simplesigner.exe"" ""${release_dir}ToolScanner.exe"" ""${release_dir}CoApp.CCI.dll"" ""${release_dir}CoApp.Developer.Toolkit.dll""
-        simplesigner --nologo  --sign --strong-name ""${release_dir}autopackage.exe"" ""${release_dir}debugwatch.exe"" ""${release_dir}Azure.exe"" ""${release_dir}pTk.exe"" ""${release_dir}QuickTool.exe"" ""${release_dir}Scan.exe"" ""${release_dir}simplesigner.exe"" ""${release_dir}ToolScanner.exe"" ""${release_dir}CoApp.CCI.dll"" ""${release_dir}CoApp.Developer.Toolkit.dll""
+        simplesigner --nologo  --sign --strong-name ""${release_dir}autopackage.exe"" ""${release_dir}debugwatch.exe"" ""${release_dir}Azure.exe"" ""${release_dir}CoApp.RepositoryService.exe"" ""${release_dir}mkRepo.exe"" ""${release_dir}pTk.exe"" ""${release_dir}QuickTool.exe"" ""${release_dir}Scan.exe"" ""${release_dir}simplesigner.exe"" ""${release_dir}ToolScanner.exe"" ""${release_dir}CoApp.CCI.dll"" ""${release_dir}CoApp.Developer.Toolkit.dll""
     ";
 }
 

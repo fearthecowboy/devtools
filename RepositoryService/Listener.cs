@@ -97,18 +97,7 @@ namespace CoApp.RepositoryService {
         }
 
         public void AddHandler( string path, RequestHandler handler ) {
-            if(  string.IsNullOrEmpty(path) ) {
-                path = "/";
-            }
-            path = path.ToLower();
-
-            if( !path.StartsWith("/")) {
-                path = "/" + path;
-            }
-
-            if (!path.EndsWith("/")) {
-                path = path + "/";
-            }
+            path = path.Slashed().ToLower();
 
             if( _paths.ContainsKey(path)) {
                 return;
@@ -121,19 +110,7 @@ namespace CoApp.RepositoryService {
         }
 
         public void RemoveHandler( string path ) {
-            if (string.IsNullOrEmpty(path)) {
-                path = "/";
-            }
-
-            path = path.ToLower();
-
-            if (!path.StartsWith("/")) {
-                path = "/" + path;
-            }
-
-            if (!path.EndsWith("/")) {
-                path = path + "/";
-            }
+            path = path.Slashed().ToLower();
 
             if (_paths.ContainsKey(path)) {
                 _paths.Remove(path);

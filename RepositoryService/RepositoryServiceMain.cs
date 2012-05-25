@@ -172,7 +172,7 @@ namespace CoApp.RepositoryService {
                     Console.WriteLine("[Package Uploader Disabled] specify must specify --package-path, --feed-path and  --package-prefix");
                 }else {
                     foreach( var feed in feeds ) {
-                        listener.AddHandler(packageUpload.Slashed(feed), new UploadedFileHandler(Path.Combine(feedTempPathPrefix,feed), feedPrefixUrl.HttpSlashed(feed), packageStoragePath, packagePrefixUrl.HttpSlashed(), tweetPackages, cfs));
+                        listener.AddHandler( packageUpload.Slashed(feed), new UploadedFileHandler(feed, Path.Combine(feedTempPathPrefix,feed), feedPrefixUrl.HttpSlashed(feed), packageStoragePath, packagePrefixUrl.HttpSlashed(), tweetPackages, cfs));
                     }
                 }
                 listener.Start();

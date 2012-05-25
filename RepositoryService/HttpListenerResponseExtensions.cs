@@ -36,15 +36,19 @@ namespace CoApp.RepositoryService {
         }
 
         public static bool IsHttp(this string input) {
-            return (input ?? "").StartsWith("http://", StringComparison.OrdinalIgnoreCase) || input.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+            return (input ?? "").StartsWith("http://", StringComparison.OrdinalIgnoreCase) || (input ?? "").StartsWith("https://", StringComparison.OrdinalIgnoreCase);
         }
 
         public static string HttpSlashed(this string input, params string[] peices) {
             input = input ?? "";
+            var prefix = "http:/";
             if (input.IsHttp()) {
-                ((peices ?? new string[0]).Aggregate((input ?? "").ReplaceWhile("//", "/").Trim('/', '\\'), (current, each) => current + "/" + (each ?? "").ReplaceWhile("//", "/").Trim('/', '\\')) + "/").ReplaceWhile("//", "/");
+                var colon = input.IndexOf(":");
+                prefix = input.Substring(0,colon+2);
+                input = input.Substring(colon+2);
+               //  return ((peices ?? new string[0]).Aggregate((input ?? "").ReplaceWhile("//", "/").Trim('/', '\\'), (current, each) => current + "/" + (each ?? "").ReplaceWhile("//", "/").Trim('/', '\\')) + "/").ReplaceWhile("//", "/");
             }
-            return "http://"+(((peices ?? new string[0]).Aggregate((input ?? "").ReplaceWhile("//", "/").Trim('/', '\\'), (current, each) => current + "/" + (each ?? "").ReplaceWhile("//", "/").Trim('/', '\\')) + "/").ReplaceWhile("//", "/"));
+            return prefix+input.Slashed(peices);
         }
 
         public static string Slashed(this string input, params string[] peices ) {

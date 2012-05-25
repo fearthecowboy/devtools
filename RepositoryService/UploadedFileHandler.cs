@@ -26,6 +26,7 @@ namespace CoApp.RepositoryService {
     using Toolkit.Extensions;
     using Toolkit.Tasks;
     using System.ServiceModel.Syndication;
+    using Toolkit.Win32;
 
     public class UploadedFileHandler : RequestHandler {
         private readonly Tweeter _tweeter;
@@ -36,9 +37,15 @@ namespace CoApp.RepositoryService {
         private readonly CloudFileSystem _cloudFileSystem;
         private readonly string _feedName;
 
+        private static readonly IDictionary<string, UploadedFileHandler> FeedHandlers = new XDictionary<string, UploadedFileHandler>();
+
         public UploadedFileHandler(string feedName, string localfeedLocation, string canonicalFeedUrl, string packageStoragePath, string packagePrefixUrl, string twitterHandle, CloudFileSystem cloudFileSystem) {
+            
             _feedName = feedName;
             _localfeedLocation = localfeedLocation.GetFullPath();
+            if( !_localfeedLocation.EndsWith(".xml")) {
+                _localfeedLocation +=  ".xml";
+            }
             _canonicalFeedUrl = new Uri(canonicalFeedUrl);
             _packageStorageFolder = packageStoragePath;
             _packagePrefixUrl = new Uri(packagePrefixUrl);
@@ -55,12 +62,85 @@ namespace CoApp.RepositoryService {
                 }
             }
 
-            CurrentTask.Events += new DownloadProgress((remoteLocation, location, progress) => {
-                "Downloading {0}".format(remoteLocation.UrlDecode()).PrintProgressBar(progress);
-            });
+            CurrentTask.Events += new DownloadProgress((remoteLocation, location, progress) => "Downloading {0}".format(remoteLocation.UrlDecode()).PrintProgressBar(progress));
 
-            CurrentTask.Events += new DownloadCompleted((remoteLocation, locallocation) => {
-                Console.WriteLine();                    
+            CurrentTask.Events += new DownloadCompleted((remoteLocation, locallocation) => Console.WriteLine());
+
+            FeedHandlers.Add(feedName, this);
+        }
+
+        public override Task Get(HttpListenerResponse response, string relativePath, Toolkit.Pipes.UrlEncodedMessage message) {
+            switch (message.Command) {
+                case "add":
+                    if (!string.IsNullOrEmpty(message["location"])) {
+                        try {
+                            var uri = new Uri(message["location"]);
+                            if (Peek(uri)) {
+                                var filename = "UploadedFile.bin".GenerateTemporaryFilename();
+                                var rf = new RemoteFile(uri, filename);
+                                rf.Get();
+                                if (File.Exists(filename)) {
+                                    return HandleFile(filename).ContinueWith(antecedent => {
+                                        if (antecedent.IsFaulted) {
+                                            var e = antecedent.Exception.InnerException;
+                                            Listener.HandleException(e);
+                                            response.StatusCode = 500;
+                                            response.Close();
+                                        } else {
+                                            response.StatusCode = antecedent.Result;
+                                            response.Close();
+                                        }
+                                    });
+                                }
+                            }
+                        } catch {
+                        }
+                    }
+                    break;
+
+                case "validate":
+                    return Validate().ContinueWith(antecedent => {
+                        if (antecedent.IsFaulted) {
+                            var e = antecedent.Exception.InnerException;
+                            Listener.HandleException(e);
+                            response.StatusCode = 500;
+                            response.Close();
+                        }
+                        else {
+                            response.StatusCode = antecedent.Result;
+                            response.Close();
+                        }
+                    });
+                    
+            }
+
+            response.StatusCode = 500;
+            response.Close();
+            return "".AsResultTask();
+        }
+            
+        private Task<int> Validate() {
+            return Task.Factory.StartNew(() => {
+                var feed = new AtomFeed();
+                //load the feed from the _canonicalFeedUrl if we can
+                try {
+                    var originalFeed = LoadFeed();
+                    foreach (AtomItem i in originalFeed.Items.Where(each => each is AtomItem)) {
+                        // drop dead urls
+                        i.Model.Feeds = i.Model.Feeds.Distinct().Where(Peek).ToXList();
+                        i.Model.Locations = i.Model.Locations.Distinct().Where(Peek).ToXList();
+                        foreach (var l in i.Links.ToArray().Where(each => !Peek(each.Uri))) {
+                            i.Links.Remove(l);
+                        }
+                        if (i.Model.Locations.Any()) {
+                            feed.Add(i);
+                        }
+                    }
+                    SaveFeed(feed);
+                } catch {
+                    return 500;
+                }
+                return 200;
             });
         }
 
@@ -86,169 +166,219 @@ namespace CoApp.RepositoryService {
                 return "".AsResultTask();
             }
 
-            var result = Task.Factory.StartNew(
-                () => {
-                    var filename = "UploadedFile.bin".GenerateTemporaryFilename();
-                    File.WriteAllBytes(filename, data);
+            var filename = "UploadedFile.bin".GenerateTemporaryFilename();
+            File.WriteAllBytes(filename, data);
 
-                    // verify that the file is actually a valid package
-                    _packageManager.QueryPackages(filename, null, null, null).ContinueWith(
-                        antecedent => {
-                            if( antecedent.IsFaulted ) {
-                                Console.WriteLine("Fault occurred after upload: {0}", filename);
-                                filename.TryHardToDelete();
-                                response.StatusCode = 400;
-                                response.Close();
-                                return;
+           return  HandleFile(filename).ContinueWith(antecedent => {
+                if( antecedent.IsFaulted ) {
+                    var e = antecedent.Exception.InnerException;
+                    Listener.HandleException(e);
+                    response.StatusCode = 500;
+                    response.Close();
+                } else {
+                    response.StatusCode = antecedent.Result;
+                    response.Close();
+                }
+            });
+        }
+
+        private void InsertIntoFeed(CanonicalName pkgCanonicalName, FourPartVersion pkgVersion,  Uri location , AtomItem item = null) {
+
+            lock (typeof(UploadedFileHandler)) {
+                // update the feed
+                var feed = new AtomFeed();
+
+                //load the feed from the _canonicalFeedUrl if we can
+                try {
+                    var originalFeed = LoadFeed();
+
+                    foreach (AtomItem i in originalFeed.Items.Where(each => each is AtomItem)) {
+                        if (_feedName == "current") {
+                            // if an older version of this package is in the current feed, 
+                            if (i.Model.CanonicalName.DiffersOnlyByVersion(pkgCanonicalName) && i.Model.CanonicalName.Version < pkgVersion) {
+                                // push it to the archive feed.
+                                FeedHandlers["archive"].InsertIntoFeed(i.Model.CanonicalName, i.Model.Version, i.Model.Locations[0]);
+                                // and skip it
+                                continue;
                             }
-
-                            if( antecedent.IsCanceled) {
-                                Console.WriteLine("Request was cancelled");
-                                filename.TryHardToDelete();
-                                response.StatusCode = 400;
-                                response.Close();
-                                return;
-                            }
-
-                            var pkg = antecedent.Result.FirstOrDefault();
-                            if( pkg == null ) {
-                                Console.WriteLine("File uploaded is not recognized as a package: {0}", filename);
-                                filename.TryHardToDelete();
-                                response.StatusCode = 400;
-                                response.Close();
-                                return;
-                            }
-                            // foo[vc10]-1.2.3.4-x86
-                            var targetFilename = "{0}{1}-{2}-{3}.msi".format(pkg.CanonicalName.Name, pkg.CanonicalName.Flavor, pkg.CanonicalName.Version, pkg.CanonicalName.Architecture.InCanonicalFormat).ToLower();
-                            //  (pkg.CanonicalName.PackageName + ".msi").ToLower();
-                            var location = new Uri(_packagePrefixUrl, targetFilename);
-                            _packageManager.GetPackageDetails(pkg.CanonicalName).Wait();
-
-                            //copy the package to the destination
-                            if (_cloudFileSystem != null) {
-                                // copy file to azure storage
-                                _cloudFileSystem.WriteBlob(_packageStorageFolder, targetFilename, filename, false, (progress) => {
-                                    ConsoleExtensions.PrintProgressBar("{0} => {1}".format(pkg.CanonicalName, _packageStorageFolder), progress);
-                                });
-
-                                if (pkg.CanonicalName.Matches(CanonicalName.CoAppItself)) {
-                                    // update the default toolkit too
-                                    _cloudFileSystem.WriteBlob(_packageStorageFolder, "coapp.msi", filename, false, (progress) => {
-                                        ConsoleExtensions.PrintProgressBar("{0} => {1}".format(_localfeedLocation, _packageStorageFolder), progress);
-                                    });
-                                    Console.WriteLine();
-                                }
-
-                                if (pkg.CanonicalName.Matches(CanonicalName.CoAppDevtools)) {
-                                    // update the default toolkit too
-                                    _cloudFileSystem.WriteBlob(_packageStorageFolder, "coapp.devtools.msi", filename, false, (progress) => {
-                                        ConsoleExtensions.PrintProgressBar("{0} => {1}".format(_localfeedLocation, _packageStorageFolder), progress);
-                                    });
-                                    Console.WriteLine();
-                                }
-
-                                // remove the local file, since we don't need it anymore.
-                                filename.TryHardToDelete();
-
-                                Console.WriteLine();
-                            } else {
-                                var targetLocation = Path.Combine(_packageStorageFolder, targetFilename);
-                                if( File.Exists(targetLocation)) {
-                                    targetLocation.TryHardToDelete();
-                                }
-
-                                File.Copy(filename, targetLocation);
-                            }
-
-                            lock(typeof(UploadedFileHandler)) {
-                                // update the feed
-                                var Feed = new AtomFeed();
-
-                                //load the feed from the _canonicalFeedUrl if we can
-                                _cloudFileSystem.ReadBlob(_packageStorageFolder, Path.GetFileName(_localfeedLocation).ToLower(), _localfeedLocation, (progress) => {
-                                    ConsoleExtensions.PrintProgressBar("Getting package feed from blob store {0} => {1}".format(_localfeedLocation, _packageStorageFolder), progress);
-                                });
-
-                                if (!string.IsNullOrEmpty(_localfeedLocation) && File.Exists(_localfeedLocation)) {
-                                    var originalFeed = AtomFeed.LoadFile(_localfeedLocation);
-                                    Feed.Add(originalFeed.Items.Where(each => each is AtomItem).Select(each => each as AtomItem));
-                                }
-
-                                var item = _packageManager.GetAtomItem(pkg.CanonicalName).Result;
-                                if (item != null) {
-                                    var feedItem = Feed.Add(item);
-
-                                    // first, make sure that the feeds contains the intended feed location.
-                                    if (feedItem.Model.Feeds == null) {
-                                        feedItem.Model.Feeds = new XList<Uri>();
-                                    }
-
-                                    if (!feedItem.Model.Feeds.Contains(_canonicalFeedUrl)) {
-                                        feedItem.Model.Feeds.Insert(0, _canonicalFeedUrl);
-                                    }
-
-                                    if (feedItem.Model.Locations == null) {
-                                        feedItem.Model.Locations = new XList<Uri>();
-                                    }
-
-                                    if (!feedItem.Model.Locations.Contains(location)) {
-                                        feedItem.Model.Locations.Insert(0, location);
-                                    }
-                                }
-
-                                Feed.Save(_localfeedLocation);
-                                if (_cloudFileSystem != null) {
-                                    _cloudFileSystem.WriteBlob(_packageStorageFolder, Path.GetFileName(_localfeedLocation).ToLower() , _localfeedLocation, false, (progress) => {
-                                        ConsoleExtensions.PrintProgressBar("{0} => {1}".format(_localfeedLocation, _packageStorageFolder), progress);
-                                    });
-                                    Console.WriteLine();
-
-                                    _cloudFileSystem.WriteBlob(_packageStorageFolder, Path.GetFileName(_localfeedLocation).ToLower()+".gz", _localfeedLocation, true, (progress) => {
-                                        ConsoleExtensions.PrintProgressBar("{0} => {1}".format(_localfeedLocation+".gz", _packageStorageFolder), progress);
-                                    });
-                                    Console.WriteLine();
-                                }
-                            }
-
-                            // Advertise the package on twitter
-                            if (_tweeter != null) {
-                                // pkg.Name
-                                Bitly.Shorten(location.AbsoluteUri).ContinueWith(
-                                    (x) => {
-                                        var name = "[{0}-{1}-{2}]".format(pkg.Name, pkg.Version, pkg.Architecture);
-
-                                        var summary = pkg.PackageDetails.SummaryDescription;
-                                        var l1 = 138 - (name.Length + x.Result.Length);
-                                        if( summary.Length > l1 ) {
-                                            summary = summary.Substring(0, l1 - 1) + "\u2026";
-                                        }
-                                        var text = "{0} {1} {2}".format(name, summary, x.Result);
-                                        Console.WriteLine("Tweet: {0}",text);
-                                        _tweeter.Tweet(text);
-                                    });
-                            }
-
-                            response.StatusCode = 200;
-                            response.Close();
-                        }, TaskContinuationOptions.AttachedToParent);
-
-                });
-
-            result.ContinueWith(
-                antecedent => {
-                    if (result.IsFaulted) {
-                        var e = antecedent.Exception.InnerException;
-                        Listener.HandleException(e);
-                        response.StatusCode = 500;
-                        response.Close();
+                        }
+                        feed.Add(i);
                     }
-                }, TaskContinuationOptions.OnlyOnFaulted);
+                } catch {
 
-            return result;
+                }
+                item = item ?? _packageManager.GetAtomItem(pkgCanonicalName).Result;
+
+                if (item != null) {
+                    // first, make sure that the feeds contains the intended feed location.
+                    
+                    item.Model.Feeds = item.Model.Feeds  ??new XList<Uri>();
+                    if (!item.Model.Feeds.Contains(_canonicalFeedUrl)) {
+                        item.Model.Feeds.Insert(0, _canonicalFeedUrl);
+                    }
+                    
+                    item.Model.Locations = item.Model.Locations  ?? new XList<Uri>();
+                    if (!item.Model.Locations.Contains(location)) {
+                        item.Model.Locations.Insert(0, location);
+                    }
+
+                    // drop dead urls
+                    item.Model.Feeds = item.Model.Feeds.Distinct().Where(Peek).ToXList();
+                    item.Model.Locations = item.Model.Locations.Distinct().Where(Peek).ToXList();
+                    foreach( var l in item.Links.ToArray().Where( each => !Peek(each.Uri) ) ) {
+                        item.Links.Remove(l);
+                    }
+
+                    if (item.Model.Locations.Any()) {
+                        // if we've got at least one valid location, add the item to the feed.
+                        feed.Add(item);
+                    }
+                }
+                SaveFeed( feed); 
+            }
         }
 
-        private void UpdateFeed(Package newPackage) {
-          
+        private AtomFeed LoadFeed() {
+            try {
+                _cloudFileSystem.ReadBlob(_packageStorageFolder, Path.GetFileName(_localfeedLocation).ToLower(), _localfeedLocation,
+                    (progress) => "Getting package feed from blob store {0} => {1}".format(_localfeedLocation, _packageStorageFolder).PrintProgressBar(progress));
+                if (!string.IsNullOrEmpty(_localfeedLocation) && File.Exists(_localfeedLocation)) {
+                    var originalFeed = AtomFeed.LoadFile(_localfeedLocation);
+                    if (originalFeed != null) {
+                        return originalFeed;
+                    }
+                }
+            } catch {
+                
+            }
+            return new AtomFeed();
         }
+
+        private void SaveFeed( AtomFeed feed ) {
+            feed.Save(_localfeedLocation);
+            if (_cloudFileSystem != null) {
+                _cloudFileSystem.WriteBlob(_packageStorageFolder, Path.GetFileName(_localfeedLocation).ToLower(), _localfeedLocation, false, (progress) => "{0} => {1}".format(_localfeedLocation, _packageStorageFolder).PrintProgressBar(progress));
+                Console.WriteLine();
+
+                _cloudFileSystem.WriteBlob(_packageStorageFolder, Path.GetFileName(_localfeedLocation).ToLower() + ".gz", _localfeedLocation, true, (progress) => "{0} => {1}".format(_localfeedLocation + ".gz", _packageStorageFolder).PrintProgressBar(progress));
+                Console.WriteLine();
+            }
+        }
+
+        private static bool Peek(Uri url) {
+            HttpWebResponse response = null;
+            try {
+                // create the request
+                var request = WebRequest.Create(url) as HttpWebRequest;
+                // instruct the server to return headers only
+                request.Method = "HEAD";
+                // make the connection
+                response = request.GetResponse() as HttpWebResponse;
+                return true;
+            }
+            catch {
+                return false;  
+            }
+            finally {
+                // make sure the response gets closed
+                //  this avoids leaking connections
+                if (response != null) {
+                    response.Close();
+                }
+            }
+        }
+
+        private Task<int> HandleFile( string filename) {
+            // verify that the file is actually a valid package
+          return  _packageManager.QueryPackages(filename, null, null, null).ContinueWith(
+                antecedent => {
+                    if (antecedent.IsFaulted) {
+                        Console.WriteLine("Fault occurred after upload: {0}", filename);
+                        filename.TryHardToDelete();
+                        return 400;
+                   }
+
+                    if (antecedent.IsCanceled) {
+                        Console.WriteLine("Request was cancelled");
+                        filename.TryHardToDelete();
+                        return 400;
+                    }
+
+                    var pkg = antecedent.Result.FirstOrDefault();
+                    if (pkg == null) {
+                        Console.WriteLine("File uploaded is not recognized as a package: {0}", filename);
+                        filename.TryHardToDelete();
+                        return 400;
+                    }
+                    _packageManager.GetPackageDetails(pkg.CanonicalName).Wait();
+                    
+                    var targetFilename = "{0}{1}-{2}-{3}.msi".format(pkg.CanonicalName.Name, pkg.CanonicalName.Flavor, pkg.CanonicalName.Version, pkg.CanonicalName.Architecture.InCanonicalFormat).ToLower();
+                    var location = new Uri(_packagePrefixUrl, targetFilename);
+
+                    // upload to it's final resting place.
+                    CopyFileToDestination(filename, targetFilename, pkg);
+
+                    // add it to the appropriate feed 
+                    InsertIntoFeed(pkg.CanonicalName, pkg.Version, location);
+
+                    // Advertise the package on twitter
+                    TweetPackage(location, pkg);
+                    return 200;
+                }, TaskContinuationOptions.AttachedToParent);
+        }
+
+        private void TweetPackage(Uri location, Package pkg) {
+            return;
+            if (_tweeter != null) {
+                // pkg.Name
+                Bitly.Shorten(location.AbsoluteUri).ContinueWith(
+                    (x) => {
+                        var name = "[{0}-{1}-{2}]".format(pkg.Name, pkg.Version, pkg.Architecture);
+
+                        var summary = pkg.PackageDetails.SummaryDescription;
+                        var l1 = 138 - (name.Length + x.Result.Length);
+                        if (summary.Length > l1) {
+                            summary = summary.Substring(0, l1 - 1) + "\u2026";
+                        }
+                        var text = "{0} {1} {2}".format(name, summary, x.Result);
+                        Console.WriteLine("Tweet: {0}", text);
+                        _tweeter.Tweet(text);
+                    });
+            }
+        }
+
+        private void CopyFileToDestination(string filename, string targetFilename, Package pkg) {
+            //copy the package to the destination
+            if (_cloudFileSystem != null) {
+                // copy file to azure storage
+                _cloudFileSystem.WriteBlob(_packageStorageFolder, targetFilename, filename, false, progress => "{0} => {1}".format(pkg.CanonicalName, _packageStorageFolder).PrintProgressBar(progress));
+
+                if (pkg.CanonicalName.Matches(CanonicalName.CoAppItself)) {
+                    // update the default toolkit too
+                    _cloudFileSystem.WriteBlob(_packageStorageFolder, "coapp.msi", filename, false, progress => "{0} => {1}".format(_localfeedLocation, _packageStorageFolder).PrintProgressBar(progress));
+                    Console.WriteLine();
+                }
+
+                if (pkg.CanonicalName.Matches(CanonicalName.CoAppDevtools)) {
+                    // update the default toolkit too
+                    _cloudFileSystem.WriteBlob(_packageStorageFolder, "coapp.devtools.msi", filename, false, progress => "{0} => {1}".format(_localfeedLocation, _packageStorageFolder).PrintProgressBar(progress));
+                    Console.WriteLine();
+                }
+
+                // remove the local file, since we don't need it anymore.
+                filename.TryHardToDelete();
+
+                Console.WriteLine();
+            } else {
+                var targetLocation = Path.Combine(_packageStorageFolder, targetFilename);
+                if (File.Exists(targetLocation)) {
+                    targetLocation.TryHardToDelete();
+                }
+
+                File.Copy(filename, targetLocation);
+            }
+        }
+
+      
     }
 }

@@ -22,7 +22,7 @@ metadata {
 - simplesigner.exe : Makes Digital Signing and Strong naming binaries trivial"; 
     icon: @"images\logo3.png";
     
-    author-version : "1.2 PRE-RC";
+    author-version : "1.2 Release Candidate";
     bug-tracker: "https://github.com/organizations/coapp/dashboard/issues";
     stability : "-100";
 }

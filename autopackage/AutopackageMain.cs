@@ -247,6 +247,10 @@ namespace CoApp.Autopackage {
             // at the end of the step, if there are any errors, let's print them out and exit now.
             FailOnErrors();
 
+            PackageModel.ProcessFauxRoles();
+            // at the end of the step, if there are any errors, let's print them out and exit now.
+            FailOnErrors();
+
             PackageModel.ProcessDeveloperLibraryRoles();
             // at the end of the step, if there are any errors, let's print them out and exit now.
             FailOnErrors();

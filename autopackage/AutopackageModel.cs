@@ -158,37 +158,43 @@ namespace CoApp.Autopackage {
                 var files = FileList.ProcessIncludes(null, fauxPaxRule, "faux-pax", "include", Source.FileRules, Environment.CurrentDirectory);
                 var name = fauxPaxRule.Parameter;
                 var fauxPax = CompositionData.FauxApplications ?? (CompositionData.FauxApplications = new List<FauxApplication>());
-                var downloadProperty = fauxPaxRule["download"];
+                var downloadProperty = fauxPaxRule["downloads"] ?? fauxPaxRule["download"];
                 var downloads = new XDictionary<string, Uri>();
-
-                foreach( var l in downloadProperty.Labels ) {
-                    if( downloadProperty.HasValues ) {
-                        var values = downloadProperty[l];
-                        foreach( var uri in values ) {
-                            try {
-                                var targetUrl = new Uri(uri);
-                                string filename = l.MakeSafeFileName();
-                                if( string.IsNullOrEmpty(filename) ) {
-                                    var p = targetUrl.AbsolutePath;
-                                    filename = p.Substring(p.IndexOf("/") + 1).MakeSafeFileName();
+                if (downloadProperty != null) {
+                    foreach (var l in downloadProperty.Labels) {
+                        if (downloadProperty.HasValues) {
+                            var values = downloadProperty[l];
+                            foreach (var uri in values) {
+                                try {
+                                    var targetUrl = new Uri(uri);
+                                    string filename = l.MakeSafeFileName();
+                                    if (string.IsNullOrEmpty(filename)) {
+                                        var p = targetUrl.AbsolutePath;
+                                        filename = p.Substring(p.IndexOf("/") + 1).MakeSafeFileName();
+                                    }
+                                    downloads[filename] = targetUrl;
+                                } catch {
+                                    Event<Error>.Raise(MessageCode.InvalidUri, fauxPaxRule.SourceLocation, "Uri '{0}' is not valid", uri);
                                 }
-                                downloads[filename] = targetUrl;
-                            } catch {
-                                Event<Error>.Raise(MessageCode.InvalidUri, fauxPaxRule.SourceLocation, "Uri '{0}' is not valid",uri );
-                            } 
+                            }
                         }
                     }
                 }
+
+                var hasInstallCmd = fauxPaxRule["install"] != null && fauxPaxRule["install"]["command"] != null;
+                var hasInstallParam = fauxPaxRule["install"] != null && fauxPaxRule["install"]["parameters"] != null;
+                var hasRemoveCmd = fauxPaxRule["remove"] != null && fauxPaxRule["remove"]["command"] != null;
+                var hasRemoveParam = fauxPaxRule["remove"] != null && fauxPaxRule["remove"]["parameters"] != null;
 
                 fauxPax.Add( new FauxApplication {
                     Name = fauxPaxRule.Parameter,
                     Downloads =downloads,
 
-                    InstallCommand = fauxPaxRule["install"]["command"].Value,
-                    InstallParameters = fauxPaxRule["install"]["parameters"].Value,
+                    InstallCommand = hasInstallCmd ? fauxPaxRule["install"]["command"].Value : "",
+                    InstallParameters = hasInstallParam ? fauxPaxRule["install"]["parameters"].Value : "",
 
-                    RemoveCommand = fauxPaxRule["remove"]["command"].Value,
-                    RemoveParameters = fauxPaxRule["remove"]["parameters"].Value,
+                    RemoveCommand = hasRemoveCmd ? fauxPaxRule["remove"]["command"].Value : "",
+                    RemoveParameters = hasRemoveParam ? fauxPaxRule["remove"]["parameters"].Value : "",
                 });
 
                 if (!string.IsNullOrEmpty(name)) {

@@ -63,7 +63,6 @@ namespace CoApp.RepositoryService {
             }
 
             CurrentTask.Events += new DownloadProgress((remoteLocation, location, progress) => "Downloading {0}".format(remoteLocation.UrlDecode()).PrintProgressBar(progress));
-
             CurrentTask.Events += new DownloadCompleted((remoteLocation, locallocation) => Console.WriteLine());
 
             FeedHandlers.Add(feedName, this);
@@ -328,7 +327,6 @@ namespace CoApp.RepositoryService {
         }
 
         private void TweetPackage(Uri location, Package pkg) {
-            return;
             if (_tweeter != null) {
                 // pkg.Name
                 Bitly.Shorten(location.AbsoluteUri).ContinueWith(

@@ -44,6 +44,7 @@ namespace CoApp.Autopackage {
         internal Rule[] SourceCodeRules;
         internal Rule[] ServiceRules;
         internal Rule[] WebApplicationRules;
+        internal Rule[] FauxApplicationRules;
         internal Rule[] DriverRules;
         internal Rule[] AllRoles;
 
@@ -222,6 +223,7 @@ namespace CoApp.Autopackage {
             // driver
 
             ApplicationRules = AllRules.GetRulesByName("application").ToArray();
+            FauxApplicationRules = AllRules.GetRulesByName("faux-pax").ToArray();
             AssemblyRules = AllRules.GetRulesByName("assembly").ToArray();
             AssembliesRules = AllRules.GetRulesByName("assemblies").ToArray();
             DeveloperLibraryRules = AllRules.GetRulesByName("developer-library").ToArray();
@@ -230,7 +232,7 @@ namespace CoApp.Autopackage {
             WebApplicationRules = AllRules.GetRulesByName("web-application").ToArray();
             DriverRules = AllRules.GetRulesByName("driver").ToArray();
             AllRoles = ApplicationRules.Union(AssemblyRules).Union(AssembliesRules).Union(DeveloperLibraryRules).Union(SourceCodeRules).Union(ServiceRules).Union(WebApplicationRules).
-                Union(DriverRules).ToArray();
+                Union(DriverRules).Union(FauxApplicationRules).ToArray();
 
             // check for any roles...
             if (!AllRoles.Any()) {

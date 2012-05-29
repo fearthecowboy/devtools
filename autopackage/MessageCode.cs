@@ -40,6 +40,7 @@ namespace CoApp.Autopackage {
         AssemblyVersionDoesNotMatch,
         AssembliesMustBeSigned,
         AssemblyHasNoName,
+        InvalidUri,
 
         // warnings
         WarningUnknown = 500,

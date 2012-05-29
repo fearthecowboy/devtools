@@ -1336,7 +1336,7 @@ REM ===================================================================
 
                             var pkgToInstall = _easy.QueryPackages(pkg, Package.Properties.Installed.Is(false), null, null).Result;
                             bool failed = false;
-                            _easy.InstallPackage(pkgToInstall.First().CanonicalName, autoUpgrade: true).Wait();
+                            _easy.Install(pkgToInstall.First().CanonicalName, autoUpgrade: true).Wait();
 
                             if( failed ) {
                                 throw new ConsoleException("Unable to install dependent package.");

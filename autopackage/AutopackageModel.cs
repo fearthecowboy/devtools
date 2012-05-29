@@ -139,7 +139,6 @@ namespace CoApp.Autopackage {
             // application rule supports the following properties:
             // include -- may include files or filesets; can not set 'destination' here, must set that in previously defined filesets.
             foreach (var appRule in Source.ApplicationRules) {
-
                 Roles.Add(new Role() { Name = appRule.Parameter ?? string.Empty, PackageRole = PackageRole.Application });
                 var files = FileList.ProcessIncludes(null, appRule, "application", "include", Source.FileRules, Environment.CurrentDirectory);
                 var name = appRule.Parameter;
@@ -151,6 +150,54 @@ namespace CoApp.Autopackage {
                 DestinationDirectoryFiles = DestinationDirectoryFiles.Union(files);
             }
         }
+
+        internal void ProcessFauxRoles() {
+            foreach (var fauxPaxRule in Source.FauxApplicationRules) {
+                Roles.Add(new Role() { Name = fauxPaxRule.Parameter ?? string.Empty, PackageRole = PackageRole.Faux });
+                Console.WriteLine("Processing Faux-Pax Role: {0}", fauxPaxRule.Parameter);
+                var files = FileList.ProcessIncludes(null, fauxPaxRule, "faux-pax", "include", Source.FileRules, Environment.CurrentDirectory);
+                var name = fauxPaxRule.Parameter;
+                var fauxPax = CompositionData.FauxApplications ?? (CompositionData.FauxApplications = new List<FauxApplication>());
+                var downloadProperty = fauxPaxRule["download"];
+                var downloads = new XDictionary<string, Uri>();
+
+                foreach( var l in downloadProperty.Labels ) {
+                    if( downloadProperty.HasValues ) {
+                        var values = downloadProperty[l];
+                        foreach( var uri in values ) {
+                            try {
+                                var targetUrl = new Uri(uri);
+                                string filename = l.MakeSafeFileName();
+                                if( string.IsNullOrEmpty(filename) ) {
+                                    var p = targetUrl.AbsolutePath;
+                                    filename = p.Substring(p.IndexOf("/") + 1).MakeSafeFileName();
+                                }
+                                downloads[filename] = targetUrl;
+                            } catch {
+                                Event<Error>.Raise(MessageCode.InvalidUri, fauxPaxRule.SourceLocation, "Uri '{0}' is not valid",uri );
+                            } 
+                        }
+                    }
+                }
+
+                fauxPax.Add( new FauxApplication {
+                    Name = fauxPaxRule.Parameter,
+                    Downloads =downloads,
+
+                    InstallCommand = fauxPaxRule["install"]["command"].Value,
+                    InstallParameters = fauxPaxRule["install"]["parameters"].Value,
+
+                    RemoveCommand = fauxPaxRule["remove"]["command"].Value,
+                    RemoveParameters = fauxPaxRule["remove"]["parameters"].Value,
+                });
+
+                if (!string.IsNullOrEmpty(name)) {
+                    files = files.Select(
+                        each => new FileEntry(each.SourcePath, Path.Combine(name.MakeSafeFileName(), each.DestinationPath))).ToArray();
+                }
+                DestinationDirectoryFiles = DestinationDirectoryFiles.Union(files);
+            }
+        } 
 
         public const string IncludeDir = "include";
         public const string DocDir = "docs";
@@ -210,6 +257,7 @@ namespace CoApp.Autopackage {
             }
         }
 
+        
         internal void ProcessWebApplicationRoles() {
             foreach (var webAppRule in Source.WebApplicationRules) {
                 var roleName = webAppRule.Parameter ?? string.Empty;

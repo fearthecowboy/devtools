@@ -7,6 +7,15 @@
     packager: "garrett serack <garretts@microsoft.com>";
 }
 
+publish-current { 
+    build-command : @"
+    for /F %%G in ('dir /s /b /o-n  coapp.devtools*.msi') do ( 
+        curl -T %%G http://coapp.org/upload/current/
+        goto :eof
+    )";
+}
+
+
 private {
     set : release_dir = @"output\any\Release\bin\";
     set : repo_dir = @"..\azure-scripts\private\reposervice\";

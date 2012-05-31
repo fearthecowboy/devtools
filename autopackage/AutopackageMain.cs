@@ -310,8 +310,9 @@ namespace CoApp.Autopackage {
             FailOnErrors();
         }
 
-        private void CreatePackageFile() {
-            var msiFile = Path.Combine(Environment.CurrentDirectory, "{0}-{1}-{2}.msi".format(PackageModel.Name, (string)PackageModel.Version, PackageModel.Architecture.ToString()));
+        private void CreatePackageFile()
+        {
+            var msiFile = Path.Combine(Environment.CurrentDirectory, "{0}{1}-{2}-{3}.msi".format(PackageModel.Name, PackageModel.Flavor, (string)PackageModel.Version, PackageModel.Architecture.ToString()));
             PackageSource.MacroValues.AddOrSet("outputfilename", Path.GetFileName(msiFile));
             PackageSource.MacroValues.AddOrSet("name", Path.GetFileNameWithoutExtension(msiFile));
             PackageSource.MacroValues.AddOrSet("canonicalname", Path.GetFileNameWithoutExtension(PackageModel.CanonicalName));

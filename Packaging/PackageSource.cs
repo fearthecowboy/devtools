@@ -15,72 +15,75 @@ namespace CoApp.Packaging {
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using Developer.Toolkit.Publishing;
     using Developer.Toolkit.Scripting.Languages.PropertySheet;
-    using Packaging.Client;
+    using Client;
     using Toolkit.Collections;
     using Toolkit.Exceptions;
     using Toolkit.Extensions;
     using Toolkit.Tasks;
 
-    internal class PackageSource {
-        internal CertificateReference Certificate;
-        internal string SigningCertPassword;
-        internal string SigningCertPath = string.Empty;
-        internal bool Remember;
-
+    public class PackageSource {
         internal PackageManager PackageManager;
         // collection of propertysheets
-        internal PropertySheet[] PropertySheets;
+        public PropertySheet[] PropertySheets;
 
         // all the different sets of rules 
-        internal Rule[] AllRules;
-        internal Rule[] DefineRules;
-        internal Rule[] ApplicationRules;
-        internal Rule[] AssemblyRules;
-        internal Rule[] AssembliesRules;
-        internal Rule[] DeveloperLibraryRules;
-        internal Rule[] SourceCodeRules;
-        internal Rule[] ServiceRules;
-        internal Rule[] WebApplicationRules;
-        internal Rule[] DriverRules;
-        internal Rule[] AllRoles;
+        public Rule[] AllRules;
+        public Rule[] DefineRules;
+        public Rule[] ApplicationRules;
+        public Rule[] AssemblyRules;
+        public Rule[] AssembliesRules;
+        public Rule[] DeveloperLibraryRules;
+        public Rule[] SourceCodeRules;
+        public Rule[] ServiceRules;
+        public Rule[] WebApplicationRules;
+        public Rule[] FauxApplicationRules;
+        public Rule[] DriverRules;
+        public Rule[] AllRoles;
 
-        internal IEnumerable<Rule> PackageRules;
-        internal IEnumerable<Rule> MetadataRules;
-        internal IEnumerable<Rule> RequiresRules;
-        internal IEnumerable<Rule> ProvidesRules;
-        internal IEnumerable<Rule> CompatabilityPolicyRules;
-        internal IEnumerable<Rule> ManifestRules;
-        internal IEnumerable<Rule> PackageCompositionRules;
-        internal IEnumerable<Rule> IdentityRules;
-        internal IEnumerable<Rule> SigningRules;
-        internal IEnumerable<Rule> FileRules;
-        internal string SourceFile;
+        public IEnumerable<Rule> PackageRules;
+        public IEnumerable<Rule> MetadataRules;
+        public IEnumerable<Rule> RequiresRules;
+        public IEnumerable<Rule> ProvidesRules;
+        public IEnumerable<Rule> CompatabilityPolicyRules;
+        public IEnumerable<Rule> ManifestRules;
+        public IEnumerable<Rule> PackageCompositionRules;
+        public IEnumerable<Rule> IdentityRules;
+        public IEnumerable<Rule> SigningRules;
+        public IEnumerable<Rule> FileRules;
+        public string SourceFile { get; set; }
 
+        public IDictionary<string, string> MacroValues = new XDictionary<string, string>();
 
-        internal void LoadPackageSourceData(string autopackageSourceFile) {
+        public PackageSource(string sourceFile, string autoPackageTemplate , IDictionary<string,string> macroValues ) {
+            // load macro values 
+            foreach (var k in macroValues.Keys) {
+                MacroValues.Add(k, macroValues[k]);
+            }
+
             // ------ Load Information to create Package 
-           
-            SourceFile = autopackageSourceFile;
+            SourceFile = sourceFile;
 
             // load up all the specified property sheets
-            LoadPropertySheets(SourceFile);
+            LoadPropertySheets(SourceFile, autoPackageTemplate);
 
             // Determine the roles that are going into the MSI, and ensure we know the basic information for the package (ver, arch, etc)
             CollectRoleRules();
         }
 
-        internal IDictionary<string, string> MacroValues = new XDictionary<string, string>();
+        public void SavePackageFile( string destinationFilename ) {
+            // we're only going to save the first packag file, the rest should just be 'support' files
+            PropertySheets[0].Save(destinationFilename);
+        }
 
-        internal string PostprocessValue(string value) {
+        public string PostprocessValue(string value) {
             if (!string.IsNullOrEmpty(value) && value.Contains("[]")) {
                 return value.Replace("[]", "");
             }
             return value;
         }
 
-        internal string GetMacroValue(string valuename) {
+        public string GetMacroValue(string valuename) {
             if (valuename == "DEFAULTLAMBDAVALUE") {
                 return "${packagedir}\\${each.Path}";
             }
@@ -88,7 +91,7 @@ namespace CoApp.Packaging {
             string defaultValue = null;
 
             if (valuename.Contains("??")) {
-                var prts = valuename.Split(new[] { '?' }, StringSplitOptions.RemoveEmptyEntries);
+                var prts = valuename.Split(new[] {'?'}, StringSplitOptions.RemoveEmptyEntries);
                 defaultValue = prts.Length > 1 ? prts[1].Trim() : string.Empty;
                 valuename = prts[0];
             }
@@ -121,20 +124,18 @@ namespace CoApp.Packaging {
             return DefineRules.GetPropertyValue(valuename) ?? (MacroValues.ContainsKey(valuename.ToLower()) ? MacroValues[valuename.ToLower()] : Environment.GetEnvironmentVariable(valuename)) ?? defaultValue;
         }
 
-#if DISABLED
-        internal IEnumerable<object> GetFileCollection(string collectionname) {
+        public IEnumerable<object> GetFileCollection(string collectionname) {
             // we use this to pick up file collections.
             var fileRule = FileRules.FirstOrDefault(each => each.Parameter == collectionname);
 
             if (fileRule == null) {
                 var collection = GetMacroValue(collectionname);
                 if (collection != null) {
-                    return collection.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(each => each.Trim());
+                    return collection.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries).Select(each => each.Trim());
                 }
 
                 Event<Error>.Raise(MessageCode.UnknownFileList, null, "Reference to unknown file list '{0}'", collectionname);
-            }
-            else {
+            } else {
                 var list = FileList.GetFileList(collectionname, FileRules);
                 return list.FileEntries.Select(each => new {
                     Path = each.DestinationPath,
@@ -146,23 +147,21 @@ namespace CoApp.Packaging {
 
             return Enumerable.Empty<object>();
         }
-#endif
 
-        internal void LoadPropertySheets(string autopackageSourceFile) {
+        public void LoadPropertySheets(string autopackageSourceFile, string autopackageTemplate) {
             //
+            var template = PropertySheet.Parse(autopackageTemplate, "autopkg-template");
 
             if (!File.Exists(autopackageSourceFile.GetFullPath())) {
                 throw new ConsoleException("Can not find autopackage file '{0}'", autopackageSourceFile.GetFullPath());
             }
 
             var result = PropertySheet.Load(autopackageSourceFile);
-#if DISABLED            
             result.GetCollection += GetFileCollection;
-#endif
             result.GetMacroValue += GetMacroValue;
             result.PostprocessProperty += PostprocessValue;
 
-            PropertySheets = new[] { result };
+            PropertySheets = new[] {result, template};
 
             // this is the master list of all the rules from all included sheets
             AllRules = PropertySheets.SelectMany(each => each.Rules).Reverse().ToArray();
@@ -185,7 +184,7 @@ namespace CoApp.Packaging {
             SigningRules = AllRules.GetRulesByName("signing");
         }
 
-        internal void CollectRoleRules() {
+        public void CollectRoleRules() {
             // -----------------------------------------------------------------------------------------------------------------------------------
             // Determine the roles that are going into the MSI, and ensure we know the basic information for the package (ver, arch, etc)
             // Available Roles are:
@@ -198,6 +197,7 @@ namespace CoApp.Packaging {
             // driver
 
             ApplicationRules = AllRules.GetRulesByName("application").ToArray();
+            FauxApplicationRules = AllRules.GetRulesByName("faux-pax").ToArray();
             AssemblyRules = AllRules.GetRulesByName("assembly").ToArray();
             AssembliesRules = AllRules.GetRulesByName("assemblies").ToArray();
             DeveloperLibraryRules = AllRules.GetRulesByName("developer-library").ToArray();
@@ -206,8 +206,14 @@ namespace CoApp.Packaging {
             WebApplicationRules = AllRules.GetRulesByName("web-application").ToArray();
             DriverRules = AllRules.GetRulesByName("driver").ToArray();
             AllRoles = ApplicationRules.Union(AssemblyRules).Union(AssembliesRules).Union(DeveloperLibraryRules).Union(SourceCodeRules).Union(ServiceRules).Union(WebApplicationRules).
-                Union(DriverRules).ToArray();
+                Union(DriverRules).Union(FauxApplicationRules).ToArray();
 
+            // check for any roles...
+            if (!AllRoles.Any()) {
+                Event<Error>.Raise(
+                    MessageCode.ZeroPackageRolesDefined, null,
+                    "No package roles are defined. Must have at least one of {{ application, assembly, service, web-application, developer-library, source-code, driver }} rules defined.");
+            }
         }
     }
 }

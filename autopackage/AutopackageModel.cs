@@ -21,6 +21,7 @@ namespace CoApp.Autopackage {
     using System.Xml;
     using System.Xml.Serialization;
     using Developer.Toolkit.Publishing;
+    using Packaging;
     using Packaging.Client;
     using Packaging.Common;
     using Packaging.Common.Model;
@@ -37,16 +38,16 @@ namespace CoApp.Autopackage {
     public class AutopackageModel : PackageModel {
         [XmlIgnore]
         private PackageSource Source;
-       
+
         [XmlIgnore]
-        internal IEnumerable<FileEntry> DestinationDirectoryFiles;
+        public IEnumerable<FileEntry> DestinationDirectoryFiles { get; set; }
 
         // Assemblies Roles
         [XmlIgnore]
-        internal List<PackageAssembly> Assemblies;
+        public List<PackageAssembly> Assemblies { get; set; }
 
         [XmlIgnore]
-        internal List<Package> DependentPackages = new List<Package>();
+        public List<Package> DependentPackages = new List<Package>();
         
         // package templates 
         [XmlIgnore]
@@ -59,7 +60,7 @@ namespace CoApp.Autopackage {
         private string _nativeAssemblyManifest;
 
         [XmlIgnore]
-        internal string WixTemplate;
+        public string WixTemplate;
 
         [XmlIgnore]
         private AtomFeed AtomFeed;
@@ -68,7 +69,7 @@ namespace CoApp.Autopackage {
         private TaskList _tasks = new TaskList();
 
         private BindingRedirect _bindingRedirect;
-        internal BindingRedirect BindingRedirect {
+        public  BindingRedirect BindingRedirect {
             get {
                 if( _bindingRedirect == null ) {
                     if (BindingPolicy != null && BindingPolicy.Maximum > 0) {
@@ -84,18 +85,20 @@ namespace CoApp.Autopackage {
         }
 
         private IEnumerable<TwoPartVersion> _versionRedirects = Enumerable.Empty<TwoPartVersion>();
+        
+        [XmlIgnore]
+        public Image IconImage;
 
-        internal Image IconImage;
-        internal XDictionary<string, string> ChildIcons; 
+        public XDictionary<string, string> ChildIcons; 
 
-        internal AutopackageModel() {
+        public AutopackageModel() {
             CompositionData = new Composition();
             DestinationDirectoryFiles = Enumerable.Empty<FileEntry>();
             Roles = new XList<Role>();
             Assemblies = new List<PackageAssembly>();
         }
 
-        internal AutopackageModel(PackageSource source, AtomFeed feed) : this() {
+        public AutopackageModel(PackageSource source, AtomFeed feed) : this() {
             Source = source;
             foreach( var sheet in Source.PropertySheets ) {
                 sheet.GetMacroValue += GetMacroValue;
@@ -115,7 +118,7 @@ namespace CoApp.Autopackage {
         }
 
         internal void ProcessCertificateInformation() {
-            Vendor = Source.Certificate.CommonName;
+            Vendor = AutopackageMain.Certificate.CommonName;
         }
 
         internal void ProcessPackageTemplates() {
@@ -355,7 +358,7 @@ namespace CoApp.Autopackage {
             
 
             foreach (var assembly in Assemblies) {
-                assembly.PublicKeyToken = Source.Certificate.PublicKeyToken;
+                assembly.PublicKeyToken = AutopackageMain.Certificate.PublicKeyToken;
             }
         }
 
@@ -431,9 +434,9 @@ namespace CoApp.Autopackage {
 
         private void DigitallySign( Binary binary ) {
             if (binary.IsManaged) {
-                binary.StrongNameKeyCertificate = Source.Certificate;
+                binary.StrongNameKeyCertificate = AutopackageMain.Certificate;
             }
-            binary.SigningCertificate = Source.Certificate;
+            binary.SigningCertificate = AutopackageMain.Certificate;
         }
 
         internal void ProcessDigitalSigning() {
@@ -538,7 +541,7 @@ namespace CoApp.Autopackage {
             Architecture pkgArchitecture = Architecture.Auto; 
             FourPartVersion pkgVersion = Source.PackageRules.GetPropertyValue("version");
             FlavorString pkgFlavor = Source.PackageRules.GetPropertyValue("flavor");
-            string pkgPublicKeyToken = Source.Certificate.PublicKeyToken;
+            string pkgPublicKeyToken = AutopackageMain.Certificate.PublicKeyToken;
 
             if (string.IsNullOrEmpty(pkgName)) {
                 Event<Error>.Raise(
@@ -789,7 +792,7 @@ namespace CoApp.Autopackage {
             if (minimum != 0 && maximum == 0) {
                 maximum = Version - 1;
             }
-            
+
             _versionRedirects = policyRule["versions"].Values.Select(each => (TwoPartVersion)each);
 
             if (_versionRedirects.IsNullOrEmpty()) {

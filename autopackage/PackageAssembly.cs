@@ -16,6 +16,7 @@ namespace CoApp.Autopackage {
     using System.Linq;
     using Developer.Toolkit.Publishing;
     using Developer.Toolkit.Scripting.Languages.PropertySheet;
+    using Packaging;
     using Toolkit.Crypto;
     using Toolkit.Extensions;
     using Toolkit.Tasks;

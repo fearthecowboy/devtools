@@ -20,6 +20,7 @@ namespace CoApp.Autopackage {
     using System.Text;
     using Developer.Toolkit.Publishing;
     using Developer.Toolkit.Scripting.Languages.PropertySheet;
+    using Packaging;
     using Packaging.Client;
     using Packaging.Common.Model.Atom;
     using Properties;
@@ -30,10 +31,7 @@ namespace CoApp.Autopackage {
     using Toolkit.Logging;
     using Toolkit.Tasks;
 
-    public delegate void Error(MessageCode code, SourceLocation sourceLocation, string message, params object[] args);
-    public delegate void Warning(MessageCode code, SourceLocation sourceLocation, string message, params object[] args);
-    public delegate void Message(MessageCode code, SourceLocation sourceLocation, string message, params object[] args);
-    public delegate void Verbose(string message, params object[] args);
+   
 
     /// <summary>
     ///   Main Program for command line coapp tool
@@ -77,6 +75,36 @@ namespace CoApp.Autopackage {
         public static int Main(string[] args) {
             return new AutopackageMain().Startup(args);
         }
+
+        internal static CertificateReference Certificate;
+        internal static string SigningCertPassword;
+        internal static string SigningCertPath = string.Empty;
+        internal static bool Remember;
+
+
+
+        internal void FindCertificate() {
+            if (string.IsNullOrEmpty(SigningCertPath)) {
+                Certificate = CertificateReference.Default;
+                if (Certificate == null) {
+                    throw new ConsoleException("No default certificate stored in the registry");
+                }
+            }
+            else if (string.IsNullOrEmpty(SigningCertPassword)) {
+                Certificate = new CertificateReference(SigningCertPath);
+            }
+            else {
+                Certificate = new CertificateReference(SigningCertPath, SigningCertPassword);
+            }
+
+            Event<Verbose>.Raise("Loaded certificate with private key {0}", Certificate.Location);
+            if (Remember) {
+                Event<Verbose>.Raise("Storing certificate details in the registry.");
+                Certificate.RememberPassword();
+                CertificateReference.Default = Certificate;
+            }
+        }
+
 
         /// <summary>
         ///   The (non-static) startup method
@@ -188,17 +216,13 @@ namespace CoApp.Autopackage {
 
                         PackageManager.AddSessionFeed(Path.GetDirectoryName(file.GetFullPath())).Wait();
 
-                        PackageSource = new PackageSource(this);
-                        foreach( var k in macrovals.Keys) {
-                            PackageSource.MacroValues.Add(k, macrovals[k]);
-                        }
+                        PackageSource = new PackageSource(file,Resources.template_autopkg, macrovals );
+                        
+                        FindCertificate();
 
-                        PackageSource.SigningCertPath = _signingCertPath;
-                        PackageSource.SigningCertPassword = _signingCertPassword;
-                        PackageSource.Remember = _remember;
-
-                        // ------ Load Information to create Package 
-                        PackageSource.LoadPackageSourceData(file);
+                        SigningCertPath = _signingCertPath;
+                        SigningCertPassword = _signingCertPassword;
+                        Remember = _remember;
 
                         // ------- Create data model for package
                         CreatePackageModel();
@@ -208,7 +232,7 @@ namespace CoApp.Autopackage {
                     }
                 }
 
-            } catch (AutopackageException) {
+            } catch (PackageException) {
                 return Fail("Autopackage encountered errors.\r\n");
             } catch (ConsoleException failure) {
                 return Fail("{0}\r\n\r\n    {1}", failure.Message, Resources.ForCommandLineHelp);
@@ -323,7 +347,7 @@ namespace CoApp.Autopackage {
 
             wixDocument.CreatePackageFile(msiFile);
             FailOnErrors();
-            Binary.SignFile(msiFile, PackageSource.Certificate);
+            Binary.SignFile(msiFile, AutopackageMain.Certificate);
             // PeBinary.SignFile(msiFile, PackageSource.Certificate);
             Console.WriteLine("\r\n ==========\r\n DONE : Signed MSI File: {0}", msiFile);
 
@@ -396,7 +420,7 @@ namespace CoApp.Autopackage {
                         Console.WriteLine(e);
                     }
                 }
-                throw new AutopackageException();
+                throw new PackageException();
             }
         }
 

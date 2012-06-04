@@ -20,6 +20,7 @@ namespace CoApp.Autopackage {
     using System.Threading.Tasks;
     using System.Xml.Linq;
     using Developer.Toolkit.Publishing;
+    using Packaging;
     using Packaging.Common.Model.Atom;
     using Properties;
     using Toolkit.DynamicXml;
@@ -122,7 +123,7 @@ namespace CoApp.Autopackage {
                 }
 
                 Binary.Load(bootstrapTempFile, BinaryLoadOptions.NoManaged).Continue(binary => {
-                    binary.SigningCertificate = Source.Certificate;
+                    binary.SigningCertificate = AutopackageMain.Certificate;
                     binary.CompanyName = Model.Vendor;
                     binary.Comments = "Installer for " + Model.DisplayName;
                     binary.ProductName = "Installer for " + Model.DisplayName;
@@ -159,7 +160,7 @@ namespace CoApp.Autopackage {
 
                 // resign the file
                 Binary.Load(managedBootstrapTemporaryFile, BinaryLoadOptions.NoManaged).Continue(binary => {
-                    binary.SigningCertificate = Source.Certificate;
+                    binary.SigningCertificate = AutopackageMain.Certificate;
                     binary.CompanyName = Model.Vendor;
                     binary.Comments = "Installer for " + Model.DisplayName;
                     binary.ProductName = "Installer for " + Model.DisplayName;
@@ -332,7 +333,7 @@ namespace CoApp.Autopackage {
                 // sign the CAT file 
                 var catfile = manifestTempFile.ChangeFileExtensionTo(".cat");
                 Binary.Load(catfile).ContinueWith(antecedent => {
-                    antecedent.Result.SigningCertificate = Source.Certificate;
+                    antecedent.Result.SigningCertificate = AutopackageMain.Certificate;
                     antecedent.Result.Save().Wait();
                 }, TaskContinuationOptions.AttachedToParent).Wait();
 

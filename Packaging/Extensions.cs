@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
 // <copyright company="CoApp Project">
 //     Copyright (c) 2010-2012 Garrett Serack and CoApp Contributors. 
 //     Contributors can be discovered using the 'git log' command.
@@ -15,11 +15,11 @@ namespace CoApp.Packaging {
     using System.ComponentModel;
     using System.IO;
     using System.Linq;
-
+    
     using System.Xml.Linq;
     using Developer.Toolkit.Scripting.Languages.PropertySheet;
-    using Packaging.Client;
-    using Packaging.Common.Model;
+    using Client;
+    using Common.Model;
     using Toolkit.Configuration;
     using Toolkit.Extensions;
     using Toolkit.Tasks;
@@ -58,10 +58,10 @@ namespace CoApp.Packaging {
         public static IEnumerable<Rule> GetRulesByParameter(this IEnumerable<Rule> rules, string parameter) {
             return rules.Where(each => each.Parameter == parameter).ToArray();
         }
-#if DISABLED
+
         public static IEnumerable<FileEntry> GetMinimalPaths(this IEnumerable<FileEntry> paths) {
             if (paths.Count() < 2) {
-                return paths.Select(each => new FileEntry(each.SourcePath, Path.GetFileName(each.DestinationPath)));
+                return paths.Select(each => new FileEntry (each.SourcePath, Path.GetFileName(each.DestinationPath)));
             }
 
             // horribly inefficient, but I'm too lazy to think this thru clearly right now
@@ -70,10 +70,10 @@ namespace CoApp.Packaging {
             return squished.Select(
                 each => {
                     var pair = each.Split('?');
-                    return new FileEntry(pair[1], pair[0]);
+                    return new FileEntry (pair[1], pair[0]);
                 });
         }
-#endif
+
         public static void With<T>(this T item, Action<T> action) {
             action(item);
         }
@@ -86,11 +86,11 @@ namespace CoApp.Packaging {
             return "manifest_" + guid.ToString().MakeSafeDirectoryId();
         }
 
-
+        
 
         public static string LiteralOrFileText(this string textOrFile) {
-            if (!string.IsNullOrEmpty(textOrFile)) {
-                if (File.Exists(textOrFile)) {
+            if( !string.IsNullOrEmpty(textOrFile) ) {
+                if( File.Exists(textOrFile)) {
                     return File.ReadAllText(textOrFile);
                 }
             }
@@ -106,39 +106,38 @@ namespace CoApp.Packaging {
             var locationAttribute = (value.GetType().GetField(value.ToString()).GetCustomAttributes(typeof(LocationAttribute), false) as LocationAttribute[]).First();
             return locationAttribute == null ? null : locationAttribute.Url.ToUri();
         }
-#if DISABLED
+
         public static string GetText(this LicenseId value) {
             var locationAttribute = (value.GetType().GetField(value.ToString()).GetCustomAttributes(typeof(LocationAttribute), false) as LocationAttribute[]).First();
             var uri = locationAttribute == null ? null : locationAttribute.Url.ToUri();
-            if (uri != null) {
+            if( uri != null ) {
                 var text = RegistryView.ApplicationUser["Licenses", uri.AbsoluteUri].StringValue;
-                if (!string.IsNullOrEmpty(text)) {
+                if( !string.IsNullOrEmpty(text)) {
                     return text;
                 }
                 var localFile = "License-txt".GenerateTemporaryFilename();
-                if (uri.IsFile) {
+                if(uri.IsFile) {
                     localFile = uri.AbsoluteUri.CanonicalizePath();
-                    if (!File.Exists(localFile)) {
+                    if( !File.Exists(localFile)) {
                         Event<Warning>.Raise(MessageCode.BadLicenseLocation, null, "Unable to retrieve the license for {0} from {1}", value,
                             localFile);
                         return null;
                     }
-                }
-                else {
+                } else {
                     var rf = new RemoteFile(uri, localFile);
                     rf.Get();
 
-                    if (!File.Exists(localFile)) {
+                    if( !File.Exists(localFile)) {
                         Event<Warning>.Raise(MessageCode.BadLicenseLocation, null, "Unable to retrieve the license for {0} from {1}", value,
                             uri.AbsolutePath);
                         return null;
                     }
                 }
 
-
+                
                 text = File.ReadAllText(localFile);
 
-                if (text.IndexOf("content clear-block") > -1) {
+                if( text.IndexOf("content clear-block") > -1) {
                     // this is off the opensource.org site
                     XDocument doc;
                     var reader = new SgmlReader();
@@ -148,7 +147,7 @@ namespace CoApp.Packaging {
                         doc = XDocument.Load(reader);
                     }
                     var div = doc.Elements().Where(each => each.Name == "div" && each.Attributes("class").FirstOrDefault().Value == "content clear-block").FirstOrDefault();
-                    if (div != null && div.HasElements) {
+                    if( div != null && div.HasElements) {
                         text = div.Elements().Aggregate("", (current, n) => current + n.ToString());
                     }
                     //if( nl.Count > 0 ) {
@@ -156,7 +155,7 @@ namespace CoApp.Packaging {
                     //}
                 }
 
-                if (string.IsNullOrEmpty(text)) {
+                if( string.IsNullOrEmpty(text)) {
                     return null;
                 }
 
@@ -166,6 +165,5 @@ namespace CoApp.Packaging {
 
             return null;
         }
-#endif
     }
 }

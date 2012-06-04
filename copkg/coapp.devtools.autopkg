@@ -59,7 +59,8 @@ files[dlls] {
     
     include: {
         "coapp.developer.toolkit.dll",
-        "coapp.cci.dll"
+        "coapp.cci.dll",
+        "coapp.packaging.dll"
     };
     
     trim-path: minimal;

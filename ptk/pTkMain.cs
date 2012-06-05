@@ -888,8 +888,8 @@ pTK [options] action [buildconfiguration...]
                         //break;
                     case "list":
                         Console.WriteLine("Buildinfo from [{0}]\r\n", buildinfo);
-                        (from build in builds
-                            let compiler = build["compiler"] 
+                        var buildsfound = (from build in builds
+                            let compiler = build["compiler"]
                             let sdk = build["sdk"]
                             let platform = build["platform"]
                             let targets = build["targets"]
@@ -899,7 +899,12 @@ pTK [options] action [buildconfiguration...]
                                 Sdk = sdk != null ? sdk.Value : "sdk7.1",
                                 Platform = platform != null ? platform.Value.NormalizePlatform() : "x86",
                                 Number_of_Outputs = targets != null ? targets.Values.Count() : 0
-                            }).ToTable().ConsoleOut();
+                            }).ToArray();
+                        if( buildsfound.Length > 0 ) {
+                            buildsfound.ToTable().ConsoleOut();
+                        } else {
+                            return Fail("No builds found.");
+                        }
                         break;
                     default:
                         return Fail("'{0}' is not a valid command. \r\n\r\n    Use --help for assistance.", command);

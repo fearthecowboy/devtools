@@ -956,6 +956,8 @@ namespace CoApp.Autopackage {
                             case "copy-file":
                             case "copy-files":
                             case "copy":
+                            case "filecopy":
+                            case "copyfile":
                                 type = CompositionAction.FileCopy;
                                 break;
 

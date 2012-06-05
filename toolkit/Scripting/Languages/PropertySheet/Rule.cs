@@ -126,5 +126,10 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             result = GetRuleProperty(this[primary] == null && this[secondary] != null ? secondary : primary);
             return true;
         }
+        
+        public PropertySheet Parent { get {
+            return ParentPropertySheet;
+        }}
+
     }
 }

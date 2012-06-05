@@ -50,11 +50,43 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             return token;
         }
 
+        protected bool Import(string importFilename, string folder) {
+            
+            string filename = importFilename.GetCustomFilePathOrWalkUp(folder) ?? importFilename;
+
+            if( string.IsNullOrEmpty(filename) || !File.Exists(filename)) {
+                return false;
+            }
+
+            string document = File.ReadAllText(filename);
+
+            if (!string.IsNullOrEmpty(document)) {
+                var includedSheet = new PropertySheet();
+                // parse the contents of that file into the current property sheet.
+                new PropertySheetParser(document, filename, includedSheet).Parse();
+
+                foreach (var r in includedSheet.Rules) {
+                    r.ParentPropertySheet = _propertySheet;
+                }
+
+                _propertySheet.ImportedSheets.Add(filename, includedSheet);
+            }
+            return true;
+        }
+
         protected PropertySheet Parse() {
             var tokenStream = PropertySheetTokenizer.Tokenize(_propertySheetText);
             var state = ParseState.Global;
             var enumerator = tokenStream.GetEnumerator();
             var importFilename = string.Empty;
+            var startFolder = System.Environment.CurrentDirectory;
+
+            // first, check for a .user file to auto-import
+            if(!string.IsNullOrEmpty(_filename) ) {
+                var fullPath = _filename.GetFullPath();
+                startFolder = Path.GetDirectoryName(fullPath) + "\\";
+                Import(Path.GetFileName(fullPath) + ".user", startFolder);                
+            }
 
             Token token;
 
@@ -144,42 +176,9 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                     case ParseState.ImportFilename:
                         switch (token.Type) {
                             case TokenType.Semicolon:
-                                // import the specified file and insert it's rules into this sheet.
-                                string document = null;
-                                string filename = null;
-
-                                if (!string.IsNullOrEmpty(_filename)) {
-                                    // it's either a full path to a file, or a relative path to the current document.
-                                    try {
-                                        var folder = Path.GetDirectoryName(_filename.GetFullPath());
-                                        filename = Path.Combine(folder, importFilename);
-                                        if (File.Exists(filename)) {
-                                            document = File.ReadAllText(filename);
-                                        }
-                                    } catch {
-                                    } // hmm that didn't work. I guess just try the filename...
+                                if( !Import(importFilename, startFolder)) {
+                                    throw new EndUserParseException(token, _filename, "PSP 122", "Imported file '{0}' not found", importFilename);
                                 }
-
-                                if( document == null ) {
-                                    // without a filename for the current document, all we can do is hope that there is a file at the specified string
-
-                                    filename = importFilename.GetFullPath();
-                                    if (!File.Exists(filename)) {
-                                        throw new EndUserParseException(token, _filename, "PSP 122", "Imported file '{0}' not found", filename);
-                                    }
-                                    document = File.ReadAllText(filename);
-                                }
-
-                                var includedSheet = new PropertySheet();
-                                // parse the contents of that file into the current property sheet.
-                                new PropertySheetParser(document, filename, includedSheet).Parse();
-
-                                foreach( var r in includedSheet.Rules) {
-                                    r.ParentPropertySheet = _propertySheet;
-                                }
-
-                                _propertySheet.ImportedSheets.Add(filename, includedSheet);
-
                                 state = ParseState.Global;
                                 continue;
                             default:

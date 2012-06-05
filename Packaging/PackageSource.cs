@@ -25,11 +25,21 @@ namespace CoApp.Packaging {
     public class PackageSource {
         internal PackageManager PackageManager;
         // collection of propertysheets
-        public PropertySheet[] PropertySheets;
+        public PropertySheet PropertySheet;
 
         // all the different sets of rules 
-        public Rule[] AllRules;
-        public Rule[] DefineRules;
+        public IEnumerable<Rule> AllRules {
+            get {
+                return PropertySheet.Rules.Reverse();
+            }
+        }
+
+        public IEnumerable<Rule> DefineRules {
+            get {
+                return AllRules.GetRulesById("define").GetRulesByName("*").ToArray();
+            }
+        }
+
         public Rule[] ApplicationRules;
         public Rule[] AssemblyRules;
         public Rule[] AssembliesRules;
@@ -41,21 +51,59 @@ namespace CoApp.Packaging {
         public Rule[] DriverRules;
         public Rule[] AllRoles;
 
-        public IEnumerable<Rule> PackageRules;
-        public IEnumerable<Rule> MetadataRules;
-        public IEnumerable<Rule> RequiresRules;
-        public IEnumerable<Rule> ProvidesRules;
-        public IEnumerable<Rule> CompatabilityPolicyRules;
-        public IEnumerable<Rule> ManifestRules;
-        public IEnumerable<Rule> PackageCompositionRules;
-        public IEnumerable<Rule> IdentityRules;
-        public IEnumerable<Rule> SigningRules;
-        public IEnumerable<Rule> FileRules;
+        public IEnumerable<Rule> PackageRules { get {
+            return AllRules.GetRulesByName("package");
+        }}
+
+        public IEnumerable<Rule> MetadataRules{ get {
+            return AllRules.GetRulesByName("metadata");
+        }}
+        public IEnumerable<Rule> RequiresRules {
+            get {
+                return AllRules.GetRulesByName("requires");
+            }
+        }
+        public IEnumerable<Rule> ProvidesRules {
+            get {
+                return AllRules.GetRulesByName("provides");
+            }
+        }
+        public IEnumerable<Rule> CompatabilityPolicyRules {
+            get {
+                return AllRules.GetRulesByName("compatability-policy");
+            }
+        }
+        public IEnumerable<Rule> ManifestRules {
+            get {
+                return AllRules.GetRulesByName("manifest");
+            }
+        }
+        public IEnumerable<Rule> PackageCompositionRules {
+            get {
+                return AllRules.GetRulesByName("package-composition");
+            }
+        }
+        public IEnumerable<Rule> IdentityRules {
+            get {
+                return AllRules.GetRulesByName("identity");
+            }
+        }
+        public IEnumerable<Rule> SigningRules {
+            get {
+                return AllRules.GetRulesByName("signing");
+            }
+        }
+        public IEnumerable<Rule> FileRules {
+            get {
+                return AllRules.GetRulesByName("files");
+            }
+        }
+
         public string SourceFile { get; set; }
 
         public IDictionary<string, string> MacroValues = new XDictionary<string, string>();
 
-        public PackageSource(string sourceFile, string autoPackageTemplate , IDictionary<string,string> macroValues ) {
+        public PackageSource(string sourceFile, IDictionary<string,string> macroValues ) {
             // load macro values 
             foreach (var k in macroValues.Keys) {
                 MacroValues.Add(k, macroValues[k]);
@@ -65,7 +113,7 @@ namespace CoApp.Packaging {
             SourceFile = sourceFile;
 
             // load up all the specified property sheets
-            LoadPropertySheets(SourceFile, autoPackageTemplate);
+            LoadPropertySheets(SourceFile);
 
             // Determine the roles that are going into the MSI, and ensure we know the basic information for the package (ver, arch, etc)
             CollectRoleRules();
@@ -73,7 +121,7 @@ namespace CoApp.Packaging {
 
         public void SavePackageFile( string destinationFilename ) {
             // we're only going to save the first packag file, the rest should just be 'support' files
-            PropertySheets[0].Save(destinationFilename);
+            PropertySheet.Save(destinationFilename);
         }
 
         public string PostprocessValue(string value) {
@@ -148,40 +196,19 @@ namespace CoApp.Packaging {
             return Enumerable.Empty<object>();
         }
 
-        public void LoadPropertySheets(string autopackageSourceFile, string autopackageTemplate) {
-            //
-            var template = PropertySheet.Parse(autopackageTemplate, "autopkg-template");
-
+        public void LoadPropertySheets(string autopackageSourceFile) {
             if (!File.Exists(autopackageSourceFile.GetFullPath())) {
                 throw new ConsoleException("Can not find autopackage file '{0}'", autopackageSourceFile.GetFullPath());
             }
 
-            var result = PropertySheet.Load(autopackageSourceFile);
-            result.GetCollection += GetFileCollection;
-            result.GetMacroValue += GetMacroValue;
-            result.PostprocessProperty += PostprocessValue;
-
-            PropertySheets = new[] {result, template};
-
-            // this is the master list of all the rules from all included sheets
-            AllRules = PropertySheets.SelectMany(each => each.Rules).Reverse().ToArray();
+            PropertySheet = PropertySheet.Load(autopackageSourceFile);
+            PropertySheet.GetCollection += GetFileCollection;
+            PropertySheet.GetMacroValue += GetMacroValue;
+            PropertySheet.PostprocessProperty += PostprocessValue;
 
             // this is the collection of rules for all the #define category. (macros)
-            DefineRules = AllRules.GetRulesById("define").GetRulesByName("*").ToArray();
+            
 
-            // lets generate ourselves some rule lists from the loaded propertysheets.
-            FileRules = AllRules.GetRulesByName("files");
-
-            PackageRules = AllRules.GetRulesByName("package");
-            MetadataRules = AllRules.GetRulesByName("metadata");
-            RequiresRules = AllRules.GetRulesByName("requires");
-            ProvidesRules = AllRules.GetRulesByName("provides");
-
-            ManifestRules = AllRules.GetRulesByName("manifest");
-            CompatabilityPolicyRules = AllRules.GetRulesByName("compatability-policy");
-            PackageCompositionRules = AllRules.GetRulesByName("package-composition");
-            IdentityRules = AllRules.GetRulesByName("identity");
-            SigningRules = AllRules.GetRulesByName("signing");
         }
 
         public void CollectRoleRules() {

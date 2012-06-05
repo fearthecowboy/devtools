@@ -440,14 +440,14 @@ namespace CoApp.Autopackage {
         }
 
         private void AddCoAppProperties() {
-            var feed = Feed.ToString().FormatWithMacros(Source.PropertySheets.First().GetMacroValue, null);
+            var feed = Feed.ToString().FormatWithMacros(Source.PropertySheet.GetMacroValue, null);
             var property = wix.Product.Add("Property", feed);
             property.Attributes.Id = "CoAppPackageFeed";
 
             //property = wix.Product.Add("Property", Model.CompositionRules.ToXml("CompositionRules").FormatWithMacros(Source.PropertySheets.First().GetMacroValue, null));
             //property.Attributes.Id = "CoAppCompositionRules";
 
-            property = wix.Product.Add("Property", Model.CompositionData.ToXml("CompositionData").FormatWithMacros(Source.PropertySheets.First().GetMacroValue, null));
+            property = wix.Product.Add("Property", Model.CompositionData.ToXml("CompositionData").FormatWithMacros(Source.PropertySheet.GetMacroValue, null));
             property.Attributes.Id = "CoAppCompositionData";
 
             property = wix.Product.Add("Property", Model.CanonicalName);

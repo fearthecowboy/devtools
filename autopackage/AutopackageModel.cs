@@ -100,9 +100,7 @@ namespace CoApp.Autopackage {
 
         public AutopackageModel(PackageSource source, AtomFeed feed) : this() {
             Source = source;
-            foreach( var sheet in Source.PropertySheets ) {
-                sheet.GetMacroValue += GetMacroValue;
-            }
+            Source.PropertySheet.GetMacroValue += GetMacroValue;
             AtomFeed = feed;
         }
         internal string GetMacroValue(string macroKey) {
@@ -111,7 +109,7 @@ namespace CoApp.Autopackage {
                 if (result == null || string.Empty == result.ToString()) {
                     return null;
                 }
-
+                
                 return result.ToString();
             }
             return null;

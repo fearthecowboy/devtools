@@ -216,8 +216,13 @@ namespace CoApp.Autopackage {
 
                         PackageManager.AddSessionFeed(Path.GetDirectoryName(file.GetFullPath())).Wait();
 
-                        PackageSource = new PackageSource(file,Resources.template_autopkg, macrovals );
+                        PackageSource = new PackageSource(file, macrovals );
+
+                        var template = PropertySheet.Parse(Resources.template_autopkg,null);
+
+                        PackageSource.PropertySheet.ImportedSheets.Add("template", template);
                         
+
                         FindCertificate();
 
                         SigningCertPath = _signingCertPath;

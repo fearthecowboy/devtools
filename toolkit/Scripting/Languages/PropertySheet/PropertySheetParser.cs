@@ -51,7 +51,6 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
         }
 
         protected bool Import(string importFilename, string folder) {
-            
             string filename = importFilename.GetCustomFilePathOrWalkUp(folder) ?? importFilename;
 
             if( string.IsNullOrEmpty(filename) || !File.Exists(filename)) {

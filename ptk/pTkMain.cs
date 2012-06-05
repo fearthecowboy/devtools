@@ -787,6 +787,28 @@ pTK [options] action [buildconfiguration...]
                     if (valueName == "DEFAULTLAMBDAVALUE") {
                         return ".";
                     }
+                    var op = valueName.EndsWith("++") ? 1 : valueName.EndsWith("--") ? -1 : 0;
+                    if (op != 0) {
+                        var tmpv = valueName.Substring(0, valueName.Length - 2);
+                        var tmpr = _propertySheet.GetMacroValue(tmpv);
+                        if (!string.IsNullOrEmpty(tmpr)) {
+                            switch (tmpr.Split(new[] {'.'}, StringSplitOptions.RemoveEmptyEntries).Length) {
+                                case 4:
+                                    // it's a four part version
+                                    var fpv = (long)(ulong)(FourPartVersion)tmpr;
+                                    return (FourPartVersion)(ulong)(fpv + op);
+                                case 2:
+                                    // it's a double
+                                    double d = 0;
+                                    Double.TryParse(tmpr, out d);
+                                    return (d + op).ToString();
+                                case 1:
+                                    int i = 0;
+                                    Int32.TryParse(tmpr, out i);
+                                    return (i + op).ToString();
+                            }
+                        }
+                    }
 
                     string defaultValue = null;
                     if( valueName.Contains("??")) {
@@ -794,6 +816,7 @@ pTK [options] action [buildconfiguration...]
                         defaultValue = parts.Length > 1 ? parts[1].Trim() : string.Empty;
                         valueName = parts[0];
                     }
+                    
 
                      var property = (from rule in DefineRules where rule.HasProperty(valueName) select rule[valueName]).FirstOrDefault();
 

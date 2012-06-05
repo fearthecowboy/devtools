@@ -30,7 +30,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.CSV
 		/// <summary>
 		/// Represents a CSV field property descriptor.
 		/// </summary>
-		private class CsvPropertyDescriptor
+		private class   CsvPropertyDescriptor
 			: PropertyDescriptor
 		{
 			#region Fields

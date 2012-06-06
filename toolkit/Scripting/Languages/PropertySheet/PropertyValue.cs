@@ -24,7 +24,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
         private readonly List<string> _values = new List<string>();
 
         public SourceLocation SourceLocation { get; internal set; }
-        internal string Label { get; private set; }
+        public string Label { get; private set; }
 
         internal PropertyValue(PropertyRule parent, string label, string collectionName = null) {
             ParentPropertyRule = parent;
@@ -87,6 +87,13 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             }
         }
 
+
+        public IEnumerable<string> SourceValues {
+            get {
+                return _values.ToArray();
+            }
+        }
+
         public IEnumerable<string> Values {
             get {
                 return this.Select(each => ParentPropertySheet.ResolveMacros(each));
@@ -111,9 +118,11 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             }
         }
 
-        internal void Add(string value) {
+        public void Add(string value) {
             _values.Add(value);
         }
+
+        
 
         public string SourceString {
             get {
@@ -146,7 +155,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             }
         }
 
-        internal IEnumerable<string> Labels {
+        internal IEnumerable<string> ResolvedLabels {
             get {
                 return CollectionValues.Select(each => ParentPropertySheet.ResolveMacros(Label, each));
             }

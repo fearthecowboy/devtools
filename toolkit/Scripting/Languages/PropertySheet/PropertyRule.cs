@@ -41,6 +41,12 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             }
         }
 
+        public IEnumerable<PropertyValue> PropertyValues {
+            get {
+                return _propertyValues.ToArray();
+            }
+        }
+
         public override string ToString() {
             var items = Labels.Select(each => new {label = each, values = this[each] ?? Enumerable.Empty<string>()});
             var result = items.Where(item => item.values.Any()).Aggregate("", (current1, item) => current1 + (item.values.Count() == 1
@@ -65,7 +71,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
 
         public IEnumerable<string> Labels {
             get {
-                return _propertyValues.SelectMany(each => each.Labels).Distinct();
+                return _propertyValues.SelectMany(each => each.ResolvedLabels).Distinct();
             }
         }
 

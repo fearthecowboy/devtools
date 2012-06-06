@@ -100,7 +100,7 @@ namespace CoApp.Autopackage {
 
         public AutopackageModel(PackageSource source, AtomFeed feed) : this() {
             Source = source;
-            Source.PropertySheet.GetMacroValue += GetMacroValue;
+            Source.GetMacroValue += GetMacroValue;
             AtomFeed = feed;
         }
         internal string GetMacroValue(string macroKey) {

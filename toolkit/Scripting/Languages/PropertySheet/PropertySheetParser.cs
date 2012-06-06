@@ -10,7 +10,6 @@
 // </license>
 //-----------------------------------------------------------------------
 
-
 namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
     using System.IO;
     using System.Collections.Generic;

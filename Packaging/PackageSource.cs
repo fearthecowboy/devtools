@@ -22,15 +22,13 @@ namespace CoApp.Packaging {
     using Toolkit.Extensions;
     using Toolkit.Tasks;
 
-    public class PackageSource {
-        internal PackageManager PackageManager;
+    public class PackageSource : PropertySheet {
         // collection of propertysheets
-        public PropertySheet PropertySheet;
 
         // all the different sets of rules 
         public IEnumerable<Rule> AllRules {
             get {
-                return PropertySheet.Rules.Reverse();
+                return Rules.Reverse();
             }
         }
 
@@ -40,16 +38,20 @@ namespace CoApp.Packaging {
             }
         }
 
-        public Rule[] ApplicationRules;
-        public Rule[] AssemblyRules;
-        public Rule[] AssembliesRules;
-        public Rule[] DeveloperLibraryRules;
-        public Rule[] SourceCodeRules;
-        public Rule[] ServiceRules;
-        public Rule[] WebApplicationRules;
-        public Rule[] FauxApplicationRules;
-        public Rule[] DriverRules;
-        public Rule[] AllRoles;
+        public IEnumerable<Rule> ApplicationRules { get { return AllRules.GetRulesByName("application"); } }
+        public IEnumerable<Rule> AssemblyRules { get { return AllRules.GetRulesByName("assembly"); } }
+        public IEnumerable<Rule> AssembliesRules { get { return AllRules.GetRulesByName("assemblies"); } }
+        public IEnumerable<Rule> DeveloperLibraryRules { get { return AllRules.GetRulesByName("developer-library"); } }
+        public IEnumerable<Rule> SourceCodeRules { get { return  AllRules.GetRulesByName("source-code"); } }
+        public IEnumerable<Rule> ServiceRules { get { return AllRules.GetRulesByName("service"); } }
+        public IEnumerable<Rule> WebApplicationRules { get { return AllRules.GetRulesByName("web-application"); } }
+        public IEnumerable<Rule> FauxApplicationRules { get { return AllRules.GetRulesByName("faux-pax"); } }
+        public IEnumerable<Rule> DriverRules { get { return AllRules.GetRulesByName("driver"); } }
+
+        public IEnumerable<Rule> AllRoles { get {
+            return ApplicationRules.Union(AssemblyRules).Union(AssembliesRules).Union(DeveloperLibraryRules).Union(SourceCodeRules).Union(ServiceRules).Union(WebApplicationRules).
+                Union(DriverRules).Union(FauxApplicationRules);
+        }}
 
         public IEnumerable<Rule> PackageRules { get {
             return AllRules.GetRulesByName("package");
@@ -121,7 +123,7 @@ namespace CoApp.Packaging {
 
         public void SavePackageFile( string destinationFilename ) {
             // we're only going to save the first packag file, the rest should just be 'support' files
-            PropertySheet.Save(destinationFilename);
+            Save(destinationFilename);
         }
 
         public string PostprocessValue(string value) {
@@ -131,7 +133,7 @@ namespace CoApp.Packaging {
             return value;
         }
 
-        public string GetMacroValue(string valuename) {
+        public string GetMacroValueImpl(string valuename) {
             if (valuename == "DEFAULTLAMBDAVALUE") {
                 return "${packagedir}\\${each.Path}";
             }
@@ -201,10 +203,11 @@ namespace CoApp.Packaging {
                 throw new ConsoleException("Can not find autopackage file '{0}'", autopackageSourceFile.GetFullPath());
             }
 
-            PropertySheet = PropertySheet.Load(autopackageSourceFile);
-            PropertySheet.GetCollection += GetFileCollection;
-            PropertySheet.GetMacroValue += GetMacroValue;
-            PropertySheet.PostprocessProperty += PostprocessValue;
+            PropertySheetParser.Parse(File.ReadAllText(autopackageSourceFile), autopackageSourceFile, this);
+            
+            GetCollection += GetFileCollection;
+            GetMacroValue += GetMacroValueImpl;
+            PostprocessProperty += PostprocessValue;
 
             // this is the collection of rules for all the #define category. (macros)
             
@@ -214,27 +217,6 @@ namespace CoApp.Packaging {
         public void CollectRoleRules() {
             // -----------------------------------------------------------------------------------------------------------------------------------
             // Determine the roles that are going into the MSI, and ensure we know the basic information for the package (ver, arch, etc)
-            // Available Roles are:
-            // application 
-            // assembly (assemblies is a short-cut for making many assembly rules)
-            // service
-            // web-application
-            // developer-library
-            // source-code
-            // driver
-
-            ApplicationRules = AllRules.GetRulesByName("application").ToArray();
-            FauxApplicationRules = AllRules.GetRulesByName("faux-pax").ToArray();
-            AssemblyRules = AllRules.GetRulesByName("assembly").ToArray();
-            AssembliesRules = AllRules.GetRulesByName("assemblies").ToArray();
-            DeveloperLibraryRules = AllRules.GetRulesByName("developer-library").ToArray();
-            SourceCodeRules = AllRules.GetRulesByName("source-code").ToArray();
-            ServiceRules = AllRules.GetRulesByName("service").ToArray();
-            WebApplicationRules = AllRules.GetRulesByName("web-application").ToArray();
-            DriverRules = AllRules.GetRulesByName("driver").ToArray();
-            AllRoles = ApplicationRules.Union(AssemblyRules).Union(AssembliesRules).Union(DeveloperLibraryRules).Union(SourceCodeRules).Union(ServiceRules).Union(WebApplicationRules).
-                Union(DriverRules).Union(FauxApplicationRules).ToArray();
-
             // check for any roles...
             if (!AllRoles.Any()) {
                 Event<Error>.Raise(

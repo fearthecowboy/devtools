@@ -466,7 +466,7 @@ namespace CoApp.Autopackage {
                 n.Name = wixNS + n.Name.LocalName;
             }
 
-            Event<Verbose>.Raise("Generated WixFile\r\n\r\n{0}", wixXml.ToString());
+            // Event<Verbose>.Raise("Generated WixFile\r\n\r\n{0}", wixXml.ToString());
 
             // file names
             var wixfile = (Path.GetFileNameWithoutExtension(msiFilename) + ".wxs").GetFileInTempFolder();

@@ -943,10 +943,26 @@ namespace CoApp.Developer.Toolkit.Publishing {
                             // we should see if we can get assembly attributes, since sometimes they can be set, but not the native ones.
                             try {
                                 if (!_mutableAssembly.AssemblyAttributes.IsNullOrEmpty()) {
+
+                                    if (!_attributesToRemove.IsNullOrEmpty()) {
+                                        for (int i = _mutableAssembly.AssemblyAttributes.Count - 1; i >= 0; i--) {
+                                            var a = _mutableAssembly.AssemblyAttributes[i];
+                                            var attributeArgument = (a.Arguments.FirstOrDefault() as MetadataConstant);
+                                            if (attributeArgument != null) {
+                                                var attributeName = a.Type.ToString();
+                                                if (_attributesToRemove.HasWildcardMatch(attributeName)) {
+                                                    _mutableAssembly.AssemblyAttributes.RemoveAt(i);
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     foreach (var a in _mutableAssembly.AssemblyAttributes) {
                                         var attributeArgument = (a.Arguments.FirstOrDefault() as MetadataConstant);
                                         if (attributeArgument != null) {
                                             var attributeName = a.Type.ToString();
+
+                                    
                                             switch (attributeName) {
                                                 case "System.Reflection.AssemblyTitleAttribute":
                                                     attributeArgument.Value = string.IsNullOrEmpty(AssemblyTitle) ? string.Empty : AssemblyTitle;
@@ -1376,6 +1392,14 @@ namespace CoApp.Developer.Toolkit.Publishing {
             set {
                 _modifiedResources = true;
                 _companyName = value;
+            }
+        }
+
+        private IEnumerable<string> _attributesToRemove = Enumerable.Empty<string>();
+
+        public void RemoveAttributes(IEnumerable<string> attributesToRemove ) {
+            if (!attributesToRemove.IsNullOrEmpty()) {
+                _attributesToRemove = _attributesToRemove.Union(attributesToRemove).Distinct().ToArray();
             }
         }
 

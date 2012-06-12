@@ -59,7 +59,7 @@ package {
         PATH=%CD%\output\any\Release\bin\;%PATH%;%CD%\ext\tools
         
         cd copkg
-        autopackage coapp.devtools.autopkg  || goto failed
+        autopackage --verbose coapp.devtools.autopkg  || goto failed
         erase /Q *.wixpdb
         echo Done Packaging!
     ";

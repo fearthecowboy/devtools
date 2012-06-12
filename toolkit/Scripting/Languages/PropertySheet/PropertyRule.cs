@@ -108,10 +108,10 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
         /// <param name="label"> </param>
         /// <param name="collection"> </param>
         /// <returns> </returns>
-        internal PropertyValue GetPropertyValue(string label, string collection = null) {
+        internal PropertyValue GetPropertyValue(string label, IEnumerable<string> collections = null) {
             var result = _propertyValues.Where(each => each.Label == label).FirstOrDefault();
             if (result == null) {
-                _propertyValues.Add(result = new PropertyValue(this, label, string.IsNullOrEmpty(collection) ? null : collection));
+                _propertyValues.Add(result = new PropertyValue(this, label, collections.IsNullOrEmpty() ? null : collections));
             }
             return result;
         }

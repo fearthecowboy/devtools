@@ -781,6 +781,8 @@ pTK [options] action [buildconfiguration...]
                 // load and parse. propertySheet will contain everything else we need for later
                 _propertySheet = PropertySheet.Load(buildinfo);
 
+                // Console.WriteLine(_propertySheet.ToString());
+
                 DefineRules = _propertySheet.Rules.Where(each => each.Id == "define" && each.Name == "*").ToArray();
 
                 _propertySheet.GetMacroValue += (valueName) => {
@@ -817,7 +819,6 @@ pTK [options] action [buildconfiguration...]
                         valueName = parts[0];
                     }
                     
-
                      var property = (from rule in DefineRules where rule.HasProperty(valueName) select rule[valueName]).FirstOrDefault();
 
                      if (property != null && property.HasValues && property.Values.Count() > 1) {
@@ -847,7 +848,9 @@ pTK [options] action [buildconfiguration...]
                 return Fail("Error parsing .buildinfo file");
             }
             
+
             var builds = from rule in _propertySheet.Rules where rule.Name != "*" && (rule.HasProperty("default") && rule["default"].Value.IsTrue()) select rule;
+            builds = builds.ToArray();
             var command = string.Empty;
 
            

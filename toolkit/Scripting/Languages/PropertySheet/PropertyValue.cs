@@ -11,14 +11,16 @@
 //-----------------------------------------------------------------------
 
 namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using CoApp.Toolkit.Extensions;
 
     public class PropertyValue : IPropertyValue {
-        private static readonly IEnumerable<string> NoCollection = "".SingleItemAsEnumerable();
-        internal readonly string _collectionName;
+        private static readonly IEnumerable<object>[] NoCollection = new[] {"".SingleItemAsEnumerable()};
+
+        internal readonly string[] _collectionNames;
 
         internal readonly PropertyRule ParentPropertyRule;
         private readonly List<string> _values = new List<string>();
@@ -26,18 +28,22 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
         public SourceLocation SourceLocation { get; internal set; }
         public string Label { get; private set; }
 
-        internal PropertyValue(PropertyRule parent, string label, string collectionName = null) {
+        internal PropertyValue(PropertyRule parent, string label, IEnumerable<string> collectionNames = null) {
             ParentPropertyRule = parent;
             Label = label;
-            _collectionName = collectionName;
+            _collectionNames = (collectionNames == null) ? null : collectionNames.Where( each => !string.IsNullOrEmpty(each)).ToArray();
         }
 
         internal IPropertyValue Actual(string label) {
-            if (string.IsNullOrEmpty(_collectionName)) {
+            if (_collectionNames.IsNullOrEmpty()) {
                 return Label == label ? this : null; // this should shortcut nicely when there is no collection.
             }
 
-            var values = CollectionValues.Where(each => ParentPropertySheet.ResolveMacros(Label, each) == label).SelectMany(each => _values.Select(value => ParentPropertySheet.ResolveMacros(value, each))).ToArray();
+            var values = Permutations.Where(each => ParentPropertySheet.ResolveMacros(Label, each) == label)
+                .SelectMany(each => _values
+                    .Select(value => ParentPropertySheet.ResolveMacros(value, each)))
+                .ToArray();
+
             if (values.Length > 0) {
                 return new ActualPropertyValue {
                     SourceLocation = SourceLocation,
@@ -59,18 +65,52 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             }
         }
 
-        private IEnumerable<object> CollectionValues {
+        private int RecursiveStep(int currentIndex, IEnumerator<object>[] enumerators) {
+            if (currentIndex < enumerators.Length) {
+                if (enumerators[currentIndex].MoveNext()) {
+                    return currentIndex;
+                }
+                enumerators[currentIndex].Reset();
+                enumerators[currentIndex].MoveNext();
+                return RecursiveStep(currentIndex + 1, enumerators);
+            }
+            return currentIndex;
+        }
+
+        private IEnumerable<object> GetCollection(string name ) {
+            var result = ParentPropertySheet.GetCollection(name);
+            return (result.IsNullOrEmpty() ? "".SingleItemAsEnumerable() : result).ToArray();
+        }
+
+        private IEnumerable<object[]> Permutations {
             get {
-                return string.IsNullOrEmpty(_collectionName)
-                    ? NoCollection // this makes it so there is a 1-element collection for things that don't have a collection. 
-                    : (ParentPropertySheet.GetCollection != null
-                        ? ParentPropertySheet.GetCollection(_collectionName)
-                        : Enumerable.Empty<object>()); // this is so that when there is supposed to be a collection, but nobody is listening, we get an empty set back.
+                if( _collectionNames.IsNullOrEmpty()) {
+                    yield return new object[0];
+                    yield break;
+                } 
+                var iterators = new IEnumerator<object>[_collectionNames.Length];
+                for (int i = 0; i < _collectionNames.Length; i++) {
+                    iterators[i] = GetCollection(_collectionNames[i]).GetEnumerator();
+                    if (i > 0) {
+                        iterators[i].MoveNext();
+                    }
+                }
+
+                while (RecursiveStep(0, iterators) < _collectionNames.Length) {
+                    yield return iterators.Select(each => each.Current).ToArray();
+                }
+            }
+        }
+
+        public IEnumerable<string> CollectionValues {
+            get {
+                return Permutations.SelectMany(each => _values.Select(value => ParentPropertySheet.ResolveMacros(value, each)));
             }
         }
 
         public IEnumerator<string> GetEnumerator() {
-            return CollectionValues.SelectMany(each => _values.Select(value => ParentPropertySheet.ResolveMacros(value, each))).GetEnumerator();
+            // an enumerator for all the collection values, regardless of replacement.
+            return CollectionValues.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator() {
@@ -91,6 +131,9 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
         public IEnumerable<string> SourceValues {
             get {
                 return _values.ToArray();
+            } set {
+                _values.Clear();
+                _values.AddRange(value);
             }
         }
 
@@ -102,7 +145,10 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
 
         public int Count {
             get {
-                return (CollectionValues.Count()*_values.Count);
+                if (_collectionNames.IsNullOrEmpty() || ParentPropertySheet.GetCollection == null) {
+                    return _values.Count;
+                }
+                return _collectionNames.Aggregate(_values.Count, (current, x) => current*GetCollection(x).Count());
             }
         }
 
@@ -126,13 +172,14 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
 
         public string SourceString {
             get {
-                if (string.IsNullOrEmpty(_collectionName)) {
-                    if (string.IsNullOrEmpty(Label)) {
+                if (_collectionNames.IsNullOrEmpty()) {
+                    
+                    if (Label.IsNullOrEmpty()) {
                         if (_values.Count == 1) {
                             return PropertySheet.QuoteIfNeeded(_values[0]) + ";\r\n";
                         }
                         if (_values.Count > 1) {
-                            return _values.Aggregate("{", (current, v) => current + "\r\n        " + PropertySheet.QuoteIfNeeded(v) + ",") + "\r\n    };\r\n\r\n";
+                            return "{\r\n        " + string.Join( ",\r\n        ", _values.Select(PropertySheet.QuoteIfNeeded)) + "\r\n    };\r\n\r\n";
                         }
                         if (_values.Count == 0) {
                             return @"""""; // WARNING--THIS SHOULD NOT BE HAPPENING. EMPTY VALUE LISTS ARE SIGN THAT YOU HAVE NOT PAID ENOUGH ATTENTION";
@@ -142,22 +189,25 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                         return "{0} = {1};\r\n".format(PropertySheet.QuoteIfNeeded(Label), PropertySheet.QuoteIfNeeded(_values[0]));
                     }
                     if (_values.Count > 1) {
-                        return "{0} = {1}".format(PropertySheet.QuoteIfNeeded(Label), _values.Aggregate("{", (current, v) => current + "\r\n        " + PropertySheet.QuoteIfNeeded(v) + ",") + "\r\n    };\r\n\r\n");
+                        return "{0} = {1}".format(PropertySheet.QuoteIfNeeded(Label), "{\r\n        " + string.Join( ",\r\n        ", _values.Select(PropertySheet.QuoteIfNeeded)) + "\r\n    };\r\n\r\n");
                     }
                     if (_values.Count == 0) {
                         return @"{0} = """"; // WARNING--THIS SHOULD NOT BE HAPPENING. EMPTY VALUE LISTS ARE SIGN THAT YOU HAVE NOT PAID ENOUGH ATTENTION".format(PropertySheet.QuoteIfNeeded(Label));
                     }
                 }
-                if (string.IsNullOrEmpty(Label)) {
-                    return _values.Aggregate("{", (current, v) => current + ("\r\n        " + PropertySheet.QuoteIfNeeded(_collectionName) + " => " + PropertySheet.QuoteIfNeeded(v) + ";")) + "\r\n    };\r\n\r\n";
+
+                // it's a lambda somehow...
+                if (Label.IsNullOrEmpty()) {
+                    return _values.Aggregate("{", (current, v) => current + ("\r\n        (" + string.Join(", ", _collectionNames.Select(PropertySheet.QuoteIfNeeded)) + ")  => " + PropertySheet.QuoteIfNeeded(v) + ";")) + "\r\n    };\r\n\r\n";
                 }
-                return _values.Aggregate("{", (current, v) => current + ("\r\n        " + PropertySheet.QuoteIfNeeded(_collectionName) + " => " + PropertySheet.QuoteIfNeeded(Label) + " = " + PropertySheet.QuoteIfNeeded(v) + ";")) + "\r\n    };\r\n\r\n";
+
+                return _values.Aggregate("{", (current, v) => current + ("\r\n        (" + string.Join(", ", _collectionNames.Select(PropertySheet.QuoteIfNeeded)) + ")  => " + PropertySheet.QuoteIfNeeded(Label) + " = " + PropertySheet.QuoteIfNeeded(v) + ";")) + "\r\n    };\r\n\r\n";
             }
         }
 
         internal IEnumerable<string> ResolvedLabels {
             get {
-                return CollectionValues.Select(each => ParentPropertySheet.ResolveMacros(Label, each));
+                return Permutations.Select(each => ParentPropertySheet.ResolveMacros(Label, each));
             }
         }
     }

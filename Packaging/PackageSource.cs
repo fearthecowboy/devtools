@@ -134,10 +134,6 @@ namespace CoApp.Packaging {
         }
 
         public string GetMacroValueImpl(string valuename) {
-            if (valuename == "DEFAULTLAMBDAVALUE") {
-                return "${packagedir}\\${each.Path}";
-            }
-
             string defaultValue = null;
 
             if (valuename.Contains("??")) {

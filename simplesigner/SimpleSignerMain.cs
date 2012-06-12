@@ -107,6 +107,7 @@ Manifest Options:
         private bool _verbose;
         private bool _verify;
         private bool _justsign;
+        private IEnumerable<string> _attributesToRemove;
 
         private string _signingCertPath = string.Empty;
         private string _signingCertPassword;
@@ -201,6 +202,10 @@ Manifest Options:
 
                     case "product-name":
                         _productName = argumentParameters.Last();
+                        break;
+
+                    case "remove-attribute" :
+                        _attributesToRemove = argumentParameters;
                         break;
 
                     case "verify":
@@ -378,6 +383,10 @@ Manifest Options:
 
                                                                 if (binary.IsManaged && _strongname) {
                                                                     binary.StrongNameKeyCertificate = _certificate;
+                                                                }
+
+                                                                if( binary.IsManaged) {
+                                                                    binary.RemoveAttributes(_attributesToRemove);
                                                                 }
 
                                                                 if (!assemblyReferences.IsNullOrEmpty()) {

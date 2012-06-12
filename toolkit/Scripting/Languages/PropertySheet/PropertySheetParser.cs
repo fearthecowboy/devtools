@@ -13,6 +13,8 @@
 namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
     using System.IO;
     using System.Collections.Generic;
+    using System.Linq;
+    using CoApp.Toolkit.Collections;
     using CoApp.Toolkit.Extensions;
     using Exceptions;
     using Utility;
@@ -105,7 +107,8 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             string propertyName = null;
             string propertyLabelText = null;
             string presentlyUnknownValue = null;
-            string collectionName = null;
+            // string collectionName = null;
+            List<string> multidimensionalLambda = null;
 
             enumerator.MoveNext();
 
@@ -315,21 +318,68 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                             case TokenType.Identifier:
                                 // at this point it could be a collection, a label, or a value.
                                 presentlyUnknownValue = token.Data;
-                                state = ParseState.InPropertyCollectionWithoutLableButHaveSomething;
+                                state = ParseState.InPropertyCollectionWithoutLabelButHaveSomething;
                                 continue;
 
                             case TokenType.CloseBrace:
-                                state = ParseState.HavePropertyCompleted;
+                                // state = ParseState.HavePropertyCompleted;
+                                // this makes the semicolon optional.
+                                state = ParseState.InRule;
+                                continue;
+
+                            case TokenType.OpenParenthesis:
+                                state = ParseState.OpenBraceExpectingMultidimesionalLamda;
+                                multidimensionalLambda  = new XList<string>();
                                 continue;
 
                             default:
                                 throw new EndUserParseException(token, _filename, "PSP 107", "In property collection, expected value or close brace '}}'");
                         }
 
-                    case ParseState.InPropertyCollectionWithoutLableButHaveSomething:
+                    case ParseState.OpenBraceExpectingMultidimesionalLamda:
+                        switch( token.Type) {
+                            case TokenType.StringLiteral:
+                            case TokenType.NumericLiteral:
+                            case TokenType.Identifier:
+                                // looks like we have the name of a collection for a multidimensional lambda
+                                multidimensionalLambda.Add( token.Data);
+                                state = ParseState.HasMultidimensionalLambdaIdentifier;
+                                continue;
+
+                            default:
+                                throw new EndUserParseException(token, _filename, "PSP 124", "In multidimensional lambda declaration, expected identifier, found '{0}'", token.Data);
+                        }
+
+                    case ParseState.HasMultidimensionalLambdaIdentifier:
+                        switch( token.Type) {
+                            case TokenType.Comma:
+                                state = ParseState.OpenBraceExpectingMultidimesionalLamda;
+                                continue;
+                            case TokenType.CloseParenthesis:
+                                state = ParseState.NextTokenBetterBeLambda;
+                                continue;
+
+                            default:
+                                throw new EndUserParseException(token, _filename, "PSP 125", "In multidimensional lambda declaration, expected close parenthesis or comma, found '{0}'", token.Data);
+                        }
+                        
+                    case ParseState.NextTokenBetterBeLambda:
+                        switch( token.Type ) {
+                            case TokenType.Lambda:
+                                // we already knew that it was going to be this.
+                                // the collection has all the appropriate values.
+                                presentlyUnknownValue = null;
+                                state = ParseState.HasLambda;
+                                continue;
+
+                            default:
+                                throw new EndUserParseException(token, _filename, "PSP 125", "Expected lambda '=>' found '{0}'", token.Data);
+                        }
+
+                    case ParseState.InPropertyCollectionWithoutLabelButHaveSomething:
                         switch (token.Type) {
                             case TokenType.Lambda:
-                                collectionName = presentlyUnknownValue;
+                                multidimensionalLambda = new XList<string> {presentlyUnknownValue};
                                 presentlyUnknownValue = null;
                                 state = ParseState.HasLambda;
                                 continue;
@@ -357,7 +407,10 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                                     pv.Add(presentlyUnknownValue);
                                     pv.SourceLocation = sourceLocation;
                                     presentlyUnknownValue = null;
-                                    state = ParseState.HavePropertyCompleted;
+                                    // state = ParseState.HavePropertyCompleted;
+                                    // this makes the semicolon optional.
+                                    state = ParseState.InRule;
+
                                 }
                                 continue;
 
@@ -375,6 +428,10 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                                     pv.SourceLocation = sourceLocation;
                                     state = ParseState.InPropertyCollectionWithoutLabelWaitingForComma;
                                 }
+                                continue;
+
+                            case TokenType.OpenBrace:
+                                state = ParseState.InPropertyCollectionWithLabel;
                                 continue;
 
                             default:
@@ -405,22 +462,32 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                             case TokenType.Comma :
                             case TokenType.CloseBrace: {
                                 // assumes "${DEFAULTLAMBDAVALUE}" for the lamda value
-                                    var pv = property.GetPropertyValue(propertyLabelText, collectionName);
+                                /* ORIG:
+                                    var pv = property.GetPropertyValue(propertyLabelText, multidimensionalLambda);
                                     pv.Add("${DEFAULTLAMBDAVALUE}");
+                                 */
+
+                                    var pv = property.GetPropertyValue("", multidimensionalLambda);
+                                    pv.Add(propertyLabelText);
+
                                     pv.SourceLocation = sourceLocation;
-                                    collectionName = propertyLabelText = null;
+                                    propertyLabelText = null;
+                                    multidimensionalLambda = null;
                                     state = ParseState.InPropertyCollectionWithoutLabelWaitingForComma;
                                 }   
 
                                 if (token.Type == TokenType.CloseBrace) {
                                     // and, we're closing out this property.
-                                    state = ParseState.HavePropertyCompleted;
+                                    // state = ParseState.HavePropertyCompleted;
+                                    // this makes the semicolon optional.
+                                    state = ParseState.InRule;
+
                                 }
                                 continue;
 
 
                             default:
-                                throw new EndUserParseException(token, _filename, "PSP 116", "After the '{0} => {1}' in collection, expected '=' ", collectionName, propertyLabelText);
+                                throw new EndUserParseException(token, _filename, "PSP 116", "After the '{0} => {1}' in collection, expected '=' ", multidimensionalLambda.Aggregate("(", (current,each) => current+", "+each)+")" , propertyLabelText);
 
                         }
 
@@ -429,16 +496,17 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                             case TokenType.StringLiteral:
                             case TokenType.NumericLiteral:
                             case TokenType.Identifier: {
-                                    var pv = property.GetPropertyValue(propertyLabelText, collectionName);
+                                var pv = property.GetPropertyValue(propertyLabelText, multidimensionalLambda);
                                     pv.Add(token.Data);
                                     pv.SourceLocation = sourceLocation;
-                                    collectionName = propertyLabelText = null;
+                                    propertyLabelText = null;
+                                    multidimensionalLambda = null;
                                     state = ParseState.InPropertyCollectionWithoutLabelWaitingForComma;
                                 }   
                                 continue;
 
                             default:
-                                throw new EndUserParseException(token, _filename, "PSP 117", "After the '{0} => {1} = ' in collection, expected a value or identifier" ,collectionName, propertyLabelText);
+                                throw new EndUserParseException(token, _filename, "PSP 117", "After the '{0} => {1} = ' in collection, expected a value or identifier", multidimensionalLambda.Aggregate("(", (current, each) => current + ", " + each) + ")", propertyLabelText);
                         }
 
                     case ParseState.InPropertyCollectionWithoutLabelWaitingForComma:
@@ -449,11 +517,14 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                                 continue;
 
                             case TokenType.CloseBrace:
-                                state = ParseState.HavePropertyCompleted;
+                                // state = ParseState.HavePropertyCompleted;
+                                // this makes the semicolon optional.
+                                state = ParseState.InRule;
+
                                 continue;
 
                             default:
-                                throw new EndUserParseException(token, _filename, "PSP 118", "After complete expression or value in a collection, expected ',' or '}'.");
+                                throw new EndUserParseException(token, _filename, "PSP 118", "After complete expression or value in a collection, expected ',' or '}}'.");
                         }
 
                     case ParseState.InPropertyCollectionWithLabel:
@@ -466,7 +537,10 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                                 continue;
 
                             case TokenType.CloseBrace:
-                                state = ParseState.HavePropertyCompleted;
+                                //state = ParseState.HavePropertyCompleted;
+                                // this makes the semicolon optional.
+                                state = ParseState.InPropertyCollectionWithoutLabelWaitingForComma;
+
                                 continue;
 
                             default:
@@ -475,11 +549,12 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
 
                     case ParseState.HaveCollectionValue: 
                         switch (token.Type) {
+                            case TokenType.Semicolon:
                             case TokenType.Comma: {
                                     var pv = property.GetPropertyValue(propertyLabelText);
                                     pv.Add(presentlyUnknownValue);
                                     pv.SourceLocation = sourceLocation;
-                                    collectionName = propertyLabelText = null;
+                                    // propertyLabelText = null;
                                     state = ParseState.InPropertyCollectionWithLabel;
                                 }
                                 continue;
@@ -488,8 +563,11 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                                     var pv = property.GetPropertyValue(propertyLabelText);
                                     pv.Add(presentlyUnknownValue);
                                     pv.SourceLocation = sourceLocation;
-                                    collectionName = propertyLabelText = null;
-                                    state = ParseState.HavePropertyCompleted;
+                                    propertyLabelText = null;
+                                    // state = ParseState.HavePropertyCompleted;
+                                    // this makes the semicolon optional.
+                                    state = ParseState.InRule;
+
                                 }
                                 continue;
 
@@ -557,9 +635,11 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
 
                     case ParseState.HavePropertyCompleted:
                         switch (token.Type) {
+                            case TokenType.CloseBrace:
                             case TokenType.Semicolon:
                                 state = ParseState.InRule;
                                 continue;
+
 
                             default:
                                 throw new EndUserParseException(token, _filename, "PSP 113", "After property completed, expected semi-colon ';'.");
@@ -594,7 +674,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             InPropertyCollectionWithoutLabel,
             HaveCollectionValue,
 
-            InPropertyCollectionWithoutLableButHaveSomething,
+            InPropertyCollectionWithoutLabelButHaveSomething,
             HasLambda,
             HasLambdaAndLabel,
             HasEqualsInCollection,
@@ -603,6 +683,9 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
 
             Import,
             ImportFilename,
+            OpenBraceExpectingMultidimesionalLamda,
+            HasMultidimensionalLambdaIdentifier,
+            NextTokenBetterBeLambda
         }
 
         #endregion

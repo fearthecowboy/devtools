@@ -791,15 +791,36 @@ namespace CoApp.Autopackage {
                 maximum = Version - 1;
             }
 
-            _versionRedirects = policyRule["versions"].Values.Select(each => (TwoPartVersion)each);
-
-            if (_versionRedirects.IsNullOrEmpty()) {
-                // didn't specify versions explicitly.
-                // we can check for overriding versions.
-                // TODO: SOON
-            }
-
             if (maximum > 0L) {
+                UInt32 start = (((uint)Version.Major) << 16);
+                UInt32 end = start + Version.Minor;
+
+                if (Version.Major == minimum.Major) {
+                    start += minimum.Minor;
+                }
+
+                var versionInARow = new List<TwoPartVersion>();
+                for (var i = start; i <= end; i++) {
+                    versionInARow.Add(i);
+                }
+
+                var allKnown = AutopackageMain.PackageManager.GetAllVersionsOfPackage(CanonicalName).Result;
+
+                var knownBetween = allKnown.Where(each => each.Version >= minimum && each.Version <= maximum).Select(each => (TwoPartVersion)each.Version);
+
+                var versions = policyRule["versions"];
+
+                _versionRedirects = (versions == null ? Enumerable.Empty<TwoPartVersion>() : versions.Values.Select(each => (TwoPartVersion)each))
+                    .Union(versionInARow).Union(knownBetween)
+                    .Distinct()
+                    .ToArray();
+
+                Event<Verbose>.Raise("Policy includes Major/Minor Versions:");
+                foreach( var v in _versionRedirects ) {
+                    Event<Verbose>.Raise("   {0}",v.ToString());    
+                }
+                
+
                 BindingPolicy = new BindingPolicy {
                     Minimum = minimum, 
                     Maximum = maximum

@@ -87,7 +87,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             File.WriteAllText(path, ToString());
         }
 
-        internal string ResolveMacros(string value, object eachItem = null) {
+        internal string ResolveMacros(string value, object[] eachItems = null) {
             if( PreprocessProperty != null) {
                 foreach (StringExtensions.GetMacroValueDelegate preprocess in PreprocessProperty.GetInvocationList()) {
                     value = preprocess(value);
@@ -95,7 +95,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             }
             
             if (GetMacroValue != null) {
-                value = ProcessMacroInternal(value, eachItem);    
+                value = ProcessMacroInternal(value, eachItems);    
             }
 
             if (PostprocessProperty != null) {
@@ -107,7 +107,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             return value;
         }
 
-        private string ProcessMacroInternal(string value, object eachItem) {
+        private string ProcessMacroInternal(string value, object[] eachItems) {
             bool keepGoing;
             if (value == null) {
                 return null;
@@ -133,22 +133,35 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                         }
                     }
 
-                    if (eachItem != null) {
+                    if (!eachItems.IsNullOrEmpty()) {
                         // try resolving it as an ${each.property} style.
                         // the element at the front is the 'this' value
                         // just trim off whatever is at the front up to and including the first dot.
                         try {
-                            if( innerMacro.Equals("each", StringComparison.CurrentCultureIgnoreCase) ) {
-                                value = value.Replace(outerMacro, eachItem.ToString());
-                                keepGoing = true;
-                            } else 
-                            if (innerMacro.Contains(".")) {
-                                innerMacro = innerMacro.Substring(innerMacro.IndexOf('.') + 1).Trim();
-                                var v = eachItem.SimpleEval(innerMacro);
-                                if (v != null) {
-                                    var r = v.ToString();
-                                    value = value.Replace(outerMacro, r);
+                            var ndx = GetIndex(innerMacro);
+
+                            if (ndx >= 0) {
+                                if (ndx < eachItems.Length) {
+                                    value = value.Replace(outerMacro, eachItems[ndx].ToString());
                                     keepGoing = true;
+                                }
+                            }
+                            else {
+                                if (innerMacro.Contains(".")) {
+                                    var indexOfDot = innerMacro.IndexOf('.');
+                                    ndx = GetIndex(innerMacro.Substring(0,indexOfDot));
+                                    if (ndx >= 0) {
+                                        if (ndx < eachItems.Length) {
+                                            innerMacro = innerMacro.Substring(indexOfDot + 1).Trim();
+
+                                            var v = eachItems[ndx].SimpleEval(innerMacro);
+                                            if (v != null) {
+                                                var r = v.ToString();
+                                                value = value.Replace(outerMacro, r);
+                                                keepGoing = true;
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -167,8 +180,17 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             return value;
         }
 
+        private int GetIndex( string innerMacro ) {
+            int ndx;
+            if (!Int32.TryParse(innerMacro, out ndx)) {
+                return innerMacro.Equals("each", StringComparison.CurrentCultureIgnoreCase) ? 0 : -1;
+            }
+            return ndx;
+        }
+
         public override string ToString() {
-            var imports = _importedSheets.Keys.Aggregate((current, each) => current + "@import {0};\r\n".format(QuoteIfNeeded(each)));
+
+            var imports = _importedSheets.Keys.Aggregate("",(current, each) => current + "@import {0};\r\n".format(QuoteIfNeeded(each)));
             return _rules.Aggregate(imports, (current, each) => current + each.SourceString);
         }
 
@@ -224,6 +246,14 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
         }
 
         internal static string QuoteIfNeeded(string val) {
+            if( val == null ) {
+                return "<null>";
+            }
+
+            if( val.IsNullOrEmpty()) {
+                return @"""""";
+            }
+
             if (val.OnlyContains(StringExtensions.LettersNumbersUnderscoresAndDashesAndDots)) {
                 return val;
             }

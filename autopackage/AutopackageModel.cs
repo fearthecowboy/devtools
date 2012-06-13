@@ -369,10 +369,10 @@ namespace CoApp.Autopackage {
 
             if( !Name.Equals("coapp", StringComparison.CurrentCultureIgnoreCase) ) {
                 // don't auto-add the coapp.toolkit dependency for the toolkit itself.
-                var toolkitPackage = AutopackageMain.PackageManager.QueryPackages(CanonicalName.CoAppItself, null, null, null).Result.OrderByDescending(each => each.Version).FirstOrDefault();
+                var toolkitPackage = AutopackageMain.PackageManager.QueryPackages(CanonicalName.CoAppItself, Package.Filters.InstalledPackages, null, null).Result.OrderByDescending(each => each.Version).FirstOrDefault();
                 
                 if( toolkitPackage != null ) {
-                    AutopackageMain.PackageManager.GetPackageDetails(toolkitPackage.CanonicalName).Wait();
+                   //  AutopackageMain.PackageManager.GetPackageDetails(toolkitPackage.CanonicalName).Wait();
                     //Console.WriteLine("Implict Package Dependency: {0}", toolkitPackage.CanonicalName);
                     DependentPackages.Add(toolkitPackage);    
                 }
@@ -384,10 +384,16 @@ namespace CoApp.Autopackage {
                 // for now, lets just see if we can do a package match, and grab just that packages
                 // in the future, we should figure out how to make better decisions for this.
                 try {
-                    var packages = AutopackageMain.PackageManager.QueryPackages(pkgName, null, null, null).Result.OrderByDescending(each => each.Version).ToArray();
+                    
+                    var packages = AutopackageMain.PackageManager.QueryPackages(pkgName, Package.Filters.InstalledPackages, null, null).Result.OrderByDescending(each => each.Version).ToArray();
 
                     if( packages.IsNullOrEmpty()) {
-                        Event<Error>.Raise( MessageCode.FailedToFindRequiredPackage, null, "Failed to find package '{0}'.", pkgName);
+                        // try looking at packages that aren't installed?
+                        packages = AutopackageMain.PackageManager.QueryPackages(pkgName, null, null, null).Result.OrderByDescending(each => each.Version).ToArray();
+                        
+                        if (packages.IsNullOrEmpty()) {
+                            Event<Error>.Raise(MessageCode.FailedToFindRequiredPackage, null, "Failed to find package '{0}'.", pkgName);
+                        }
                     }
 
                     if( packages.Select(each => each.Name).Distinct().Count() > 1 ) {

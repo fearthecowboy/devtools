@@ -49,6 +49,9 @@ namespace CoApp.Bootstrapper {
         internal static bool Quiet;
         internal static bool Passive;
         internal static bool Remove;
+        internal static bool PassiveOrQuiet { get {
+            return Quiet || Passive;
+        } }
 
         private static string _msiCanonicalName;
         private static ulong _msiCoAppVersion;
@@ -84,6 +87,7 @@ namespace CoApp.Bootstrapper {
 
                 foreach (var split in args.Skip(1).Select(a => a.ToLower().Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries)).Where(split => split.Length >= 2)) {
                     if (split[0] == "--uilevel") {
+                        Logger.Message("UIlevel: {0}", split[1]);
                         Quiet = split[1] == "2";
                         Passive = split[1] == "3";
                     }
@@ -177,6 +181,7 @@ namespace CoApp.Bootstrapper {
 
             // we're not an admin I guess.
             try {
+                var rc = 0;
                 var process = new Process {
                     StartInfo = {
                         UseShellExecute = true,
@@ -194,11 +199,12 @@ namespace CoApp.Bootstrapper {
                     throw new Exception();
                 }
 
-                if( Quiet || Passive ) {
+                if (PassiveOrQuiet) {
                     process.WaitForExit();
+                    rc = process.ExitCode;
                 }
 
-                Environment.Exit(0); // since this didn't throw, we know the kids got off to school ok. :)
+                Environment.Exit(rc); // since this didn't throw, we know the kids got off to school ok. :)
             } catch {
                 MainWindow.Fail(LocalizedMessage.IDS_REQUIRES_ADMIN_RIGHTS, "The installer requires administrator permissions.");
             }
@@ -247,9 +253,9 @@ namespace CoApp.Bootstrapper {
                 appDomain.SetData("COAPP_INSTALLED", "TRUE");
             }
 
-            appDomain.SetData("QUIET", Quiet);
-            appDomain.SetData("PASSIVE", Passive);
-            appDomain.SetData("REMOVE", Remove);
+            appDomain.SetData("QUIET", Quiet.ToString());
+            appDomain.SetData("PASSIVE", Passive.ToString());
+            appDomain.SetData("REMOVE", Remove.ToString());
 
             try {
                 // If we're bypassing the UI, then we can jump straight to the Installer.
@@ -321,11 +327,11 @@ namespace CoApp.Bootstrapper {
             ExitQuick();
         }
 
-        private static void ExitQuick() {
+        internal static void ExitQuick(int i = 0) {
             if (Application.Current != null) {
-                Application.Current.Shutdown(0);
+                Application.Current.Shutdown(i);
             }
-            Environment.Exit(0);
+            Environment.Exit(i);
         }
 
         internal static string AcquireFile(string filename, Action<int> progressCompleted = null) {
@@ -595,29 +601,28 @@ namespace CoApp.Bootstrapper {
                         // if you have an incompatible version of CoApp, we need to block on removing it.
                         // and for now, if you install coapp toolkit via the bootstrapper, we force wipe.
                         if (IsIncompatibleCoAppInstalled) {
-                            
-                            var okToProceed = new ManualResetEvent(false);
-                            MainWindow.WhenReady += () => {
-                                MainWindow.MainWin.Opacity = 0;
-                                var answer = new PopupQuestion(
-                                    @"The CoApp Package Manager you have installed is incompatible 
+                            if (!PassiveOrQuiet) { // skip the UI if we're in quiet or passive mode.
+                                var okToProceed = new ManualResetEvent(false);
+                                MainWindow.WhenReady += () => {
+                                    MainWindow.MainWin.Opacity = 0;
+                                    var answer = new PopupQuestion(
+                                        @"The CoApp Package Manager you have installed is incompatible 
 with the latest availible packages, and must be removed and 
 replaced with a newer version in order to continue.
 
 This will remove the existing CoApp installation and all packages 
 that are currently installed.", "Stop, don't continue", "Yes, Upgrade CoApp").ShowDialog() == true;
-                                
-                                if( !answer ) {
-                                    ExitQuick();
-                                }
-                                else {
-                                    okToProceed.Set();
-                                    MainWindow.MainWin.Opacity = 1;
-                                }
-                            };
 
-                            okToProceed.WaitOne();
+                                    if (!answer) {
+                                        ExitQuick();
+                                    } else {
+                                        okToProceed.Set();
+                                        MainWindow.MainWin.Opacity = 1;
+                                    }
+                                };
 
+                                okToProceed.WaitOne();
+                            }
                             // bring down the cleaner, and let it do the nasty.
                             var cleanerExe = AcquireFile("coapp.cleaner.exe");
                             if( string.IsNullOrEmpty(cleanerExe)) {

@@ -2,67 +2,75 @@
 <Wix >
   <!-- language must be figured out!-->
   <Product Language="1033">
-      <Package InstallerVersion="301" Compressed="yes" InstallPrivileges="limited" />
-      <Media Id="1" Cabinet="cab.cab" EmbedCab="yes" CompressionLevel="high"/>
-      <!-- CoApp Packages must be not be allusers, not per-user (GS)-->
-      <Property Id="ALLUSERS" Secure="yes" />
-    
-      <!-- add in the custom action native bootstrap-->
+    <Package InstallerVersion="301" Compressed="yes" InstallPrivileges="limited" />
+    <Media Id="1" Cabinet="cab.cab" EmbedCab="yes" CompressionLevel="high"/>
+    <!-- CoApp Packages must be not be allusers, not per-user (GS)-->
+    <Property Id="ALLUSERS" Secure="yes" />
 
-      <Binary Id="native_bootstrap.exe"/>
-      <CustomAction Id="native_bootstrap_CA" BinaryKey="native_bootstrap.exe" ExeCommand='"[OriginalDatabase]" --uilevel=[UILevel] --remove=[REMOVE]' Impersonate="yes" Return="ignore" Execute="immediate"/>
-      <CustomAction Id="native_bootstrap_CA_UI" BinaryKey="native_bootstrap.exe" ExeCommand='"[OriginalDatabase]" --uilevel=[UILevel] --remove=[REMOVE]' Impersonate="yes" Return="asyncNoWait" Execute="immediate"/>
+    <!-- add in the custom action native bootstrap-->
 
+    <Binary Id="native_bootstrap.exe"/>
+    <CustomAction Id="native_bootstrap_CA" BinaryKey="native_bootstrap.exe" ExeCommand='"[OriginalDatabase]" --uilevel=[UILevel] --remove=[REMOVE]' Impersonate="yes" Return="asyncNoWait" Execute="immediate"/>
+    <CustomAction Id="native_bootstrap_CA_QUIET" BinaryKey="native_bootstrap.exe" ExeCommand='"[OriginalDatabase]" --uilevel=2 --remove=[REMOVE] --skipui=true' Impersonate="yes" Return="ignore" Execute="immediate"/>
+    <CustomAction Id="native_bootstrap_CA_PASSIVE" BinaryKey="native_bootstrap.exe" ExeCommand='"[OriginalDatabase]" --uilevel=3 --remove=[REMOVE] --skipui=true' Impersonate="yes" Return="ignore" Execute="immediate"/>
 
     <!-- add in the custom action managed bootstrap here -->
-      <Binary Id="managed_bootstrap.exe"/>
-      <CustomAction Id="managed_bootstrap_CA" BinaryKey="managed_bootstrap.exe" ExeCommand='"[OriginalDatabase]" --uilevel=[UILevel] --remove=[REMOVE]' Impersonate="yes" Return="ignore" Execute="immediate"/>
-      <CustomAction Id="managed_bootstrap_CA_UI" BinaryKey="managed_bootstrap.exe" ExeCommand='"[OriginalDatabase]" --uilevel=[UILevel] --remove=[REMOVE]' Impersonate="yes" Return="asyncNoWait" Execute="immediate"/>
+    <Binary Id="managed_bootstrap.exe"/>
+    <CustomAction Id="managed_bootstrap_CA" BinaryKey="managed_bootstrap.exe" ExeCommand='"[OriginalDatabase]" --uilevel=[UILevel] --remove=[REMOVE]' Impersonate="yes" Return="asyncNoWait" Execute="immediate"/>
+    <CustomAction Id="managed_bootstrap_CA_QUIET" BinaryKey="managed_bootstrap.exe" ExeCommand='"[OriginalDatabase]" --uilevel=2 --remove=[REMOVE] --skipui=true' Impersonate="yes" Return="ignore" Execute="immediate"/>
+    <CustomAction Id="managed_bootstrap_CA_PASSIVE" BinaryKey="managed_bootstrap.exe" ExeCommand='"[OriginalDatabase]" --uilevel=3 --remove=[REMOVE] --skipui=true' Impersonate="yes" Return="ignore" Execute="immediate"/>
 
-      <Property Id="NETFRAMEWORK40"><RegistrySearch Id="NetFramework40" Root="HKLM" Key="Software\Microsoft\NET Framework Setup\NDP\v4\Full" Name="Install" Type="raw"/></Property>
+    <Property Id="NETFRAMEWORK40">
+      <RegistrySearch Id="NetFramework40" Root="HKLM" Key="Software\Microsoft\NET Framework Setup\NDP\v4\Full" Name="Install" Type="raw"/>
+    </Property>
+
+    <!-- add to ARP or not?-->
+    <SetProperty Id="ARPSYSTEMCOMPONENT" Value="1" After="CostFinalize"><![CDATA[NOT ADD_TO_ARP]]></SetProperty>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+    </Directory>
+
+    <Feature Id="ProductFeature" Level="1"/>
+
+    <InstallUISequence>
+      <AppSearch Suppress="yes"/>
+      <LaunchConditions Suppress="yes"/>
+      <ValidateProductID Suppress="yes"/>
+      <Custom Action="native_bootstrap_CA" After="AppSearch">NOT QUIET AND NOT PASSIVE AND NOT COAPP AND NOT REMOVE AND NOT NETFRAMEWORK40</Custom>
+      <Custom Action="managed_bootstrap_CA" After="AppSearch">NOT QUIET AND NOT PASSIVE AND NOT COAPP AND NOT REMOVE AND NETFRAMEWORK40</Custom>
+
+      <Custom Action="native_bootstrap_CA_QUIET" After="AppSearch">QUIET AND NOT COAPP AND NOT REMOVE AND NOT NETFRAMEWORK40</Custom>
+      <Custom Action="managed_bootstrap_CA_QUIET" After="AppSearch">QUIET AND NOT COAPP AND NOT REMOVE AND NETFRAMEWORK40</Custom>
+
+      <Custom Action="native_bootstrap_CA_PASSIVE" After="AppSearch">PASSIVE AND NOT QUIET AND NOT COAPP AND NOT REMOVE AND NOT NETFRAMEWORK40</Custom>
+      <Custom Action="managed_bootstrap_CA_PASSIVE" After="AppSearch">PASSIVE AND NOT QUIET AND NOT COAPP AND NOT REMOVE AND NETFRAMEWORK40</Custom>
+      <ExecuteAction Sequence="1300">COAPP OR REMOVE</ExecuteAction>
+    </InstallUISequence>
+
+    <InstallExecuteSequence>
+      <ValidateProductID Sequence="700"></ValidateProductID>
+      <CostInitialize Sequence="800"></CostInitialize>
+      <FileCost Sequence="900"></FileCost>
+      <CostFinalize Sequence="1000"></CostFinalize>
+      <InstallValidate Sequence="1400"></InstallValidate>
+      <InstallInitialize Sequence="1500"></InstallInitialize>
       
-        <!-- add to ARP or not?-->
-      <SetProperty Id="ARPSYSTEMCOMPONENT" Value="1" After="CostFinalize"><![CDATA[NOT ADD_TO_ARP]]></SetProperty>
+      <ProcessComponents Sequence="1600">COAPP OR REMOVE</ProcessComponents>
+      <MsiUnpublishAssemblies Sequence="1750">COAPP OR REMOVE</MsiUnpublishAssemblies>
+      <UnpublishFeatures Sequence="1800">COAPP OR REMOVE</UnpublishFeatures>
+      <RemoveRegistryValues Sequence="2600">COAPP OR REMOVE</RemoveRegistryValues>
+      <RemoveFiles Sequence="3500">COAPP OR REMOVE</RemoveFiles>
+      <InstallFiles Sequence="4000">COAPP</InstallFiles>
+      <WriteRegistryValues Sequence="5000">COAPP OR REMOVE</WriteRegistryValues>
+      <RegisterUser Sequence="6000">COAPP</RegisterUser>
+      <RegisterProduct Sequence="6100">COAPP</RegisterProduct>
+      <MsiPublishAssemblies Sequence="6250">COAPP</MsiPublishAssemblies>
+      <PublishFeatures Sequence="6300">COAPP</PublishFeatures>
+      <PublishProduct Sequence="6400">COAPP</PublishProduct>
 
-      <Directory Id="TARGETDIR" Name="SourceDir">
-      </Directory>
-    
-      <Feature Id="ProductFeature" Level="1"/>
-
-      <InstallUISequence>
-        <AppSearch Suppress="yes"/>
-        <LaunchConditions Suppress="yes"/>
-        <ValidateProductID Suppress="yes"/>
-        <Custom Action="native_bootstrap_CA_UI" After="AppSearch">NOT COAPP AND NOT REMOVE AND NOT NETFRAMEWORK40</Custom>
-        <Custom Action="managed_bootstrap_CA_UI" After="AppSearch">NOT COAPP AND NOT REMOVE AND NETFRAMEWORK40</Custom>
-        <ExecuteAction Sequence="1300">COAPP OR REMOVE</ExecuteAction>
-      </InstallUISequence>
-    
-      <InstallExecuteSequence>
-        <ValidateProductID Sequence="700"></ValidateProductID>
-        <CostInitialize Sequence="800"></CostInitialize>
-        <FileCost Sequence="900"></FileCost>
-        <CostFinalize Sequence="1000"></CostFinalize>
-        <InstallValidate Sequence="1400"></InstallValidate>
-        <InstallInitialize Sequence="1500"></InstallInitialize>
-        
-        <ProcessComponents Sequence="1600">COAPP OR REMOVE</ProcessComponents>
-        <MsiUnpublishAssemblies Sequence="1750">COAPP OR REMOVE</MsiUnpublishAssemblies>
-        <UnpublishFeatures Sequence="1800">COAPP OR REMOVE</UnpublishFeatures>
-        <RemoveRegistryValues Sequence="2600">COAPP OR REMOVE</RemoveRegistryValues>
-        <RemoveFiles Sequence="3500">COAPP OR REMOVE</RemoveFiles>
-        <InstallFiles Sequence="4000">COAPP</InstallFiles>
-        <WriteRegistryValues Sequence="5000">COAPP OR REMOVE</WriteRegistryValues>
-        <RegisterUser Sequence="6000">COAPP</RegisterUser>
-        <RegisterProduct Sequence="6100">COAPP</RegisterProduct>
-        <MsiPublishAssemblies Sequence="6250">COAPP</MsiPublishAssemblies>
-        <PublishFeatures Sequence="6300">COAPP</PublishFeatures>
-        <PublishProduct Sequence="6400">COAPP</PublishProduct>
-        
-        <InstallFinalize Sequence="6600"></InstallFinalize>
-        <Custom Action="native_bootstrap_CA" After="InstallFinalize">NOT COAPP AND NOT REMOVE AND NOT NETFRAMEWORK40 AND (UILevel = 2 OR UILevel = 3)</Custom>
-        <Custom Action="managed_bootstrap_CA" After="InstallFinalize">NOT COAPP AND NOT REMOVE AND NETFRAMEWORK40 AND (UILevel = 2 OR UILevel = 3)</Custom>
-
-      </InstallExecuteSequence>
-    </Product>
+      <InstallFinalize Sequence="6600"></InstallFinalize>
+      <Custom Action="native_bootstrap_CA" After="InstallFinalize">NOT COAPP AND NOT REMOVE AND NOT NETFRAMEWORK40 AND (UILevel = 2 OR UILevel = 3)</Custom>
+      <Custom Action="managed_bootstrap_CA" After="InstallFinalize">NOT COAPP AND NOT REMOVE AND NETFRAMEWORK40 AND (UILevel = 2 OR UILevel = 3)</Custom>
+    </InstallExecuteSequence>
+  </Product>
 </Wix>

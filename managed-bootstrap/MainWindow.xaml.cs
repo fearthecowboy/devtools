@@ -143,6 +143,9 @@ namespace CoApp.Bootstrapper {
         internal static void Fail(LocalizedMessage message, string messageText) {
             if (!SingleStep.Cancelling) {
                 SingleStep.Cancelling = true;
+                if( SingleStep.PassiveOrQuiet ) {
+                    SingleStep.ExitQuick((int)message);
+                }
                 WhenReady += () => {
                     messageText = GetString(message, messageText);
 

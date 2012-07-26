@@ -265,6 +265,10 @@ namespace CoApp.Autopackage {
             // at the end of the step, if there are any errors, let's print them out and exit now.
             FailOnErrors();
 
+            PackageModel.ProcessCosmeticMetadata();
+            // at the end of the step, if there are any errors, let's print them out and exit now.
+            FailOnErrors();
+
             // Ensure digital signatures and strong names are all good to go
             // this doesn't commit the files to disk tho' ...
             PackageModel.ProcessDigitalSigning();
@@ -329,9 +333,7 @@ namespace CoApp.Autopackage {
             // at the end of the step, if there are any errors, let's print them out and exit now.
             FailOnErrors();
 
-            PackageModel.ProcessCosmeticMetadata();
-            // at the end of the step, if there are any errors, let's print them out and exit now.
-            FailOnErrors();
+           // here
             
             PackageModel.ProcessCompositionRules();
             // at the end of the step, if there are any errors, let's print them out and exit now.

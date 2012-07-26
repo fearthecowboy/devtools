@@ -332,7 +332,7 @@ namespace CoApp.Autopackage {
 
                 // sign the CAT file 
                 var catfile = manifestTempFile.ChangeFileExtensionTo(".cat");
-                Binary.Load(catfile).ContinueWith(antecedent => {
+                Binary.Load(catfile, BinaryLoadOptions.NoManifest | BinaryLoadOptions.NoResources | BinaryLoadOptions.NoManaged ).ContinueWith(antecedent => {
                     antecedent.Result.SigningCertificate = AutopackageMain.Certificate;
                     antecedent.Result.Save().Wait();
                 }, TaskContinuationOptions.AttachedToParent).Wait();

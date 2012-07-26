@@ -447,7 +447,8 @@ namespace CoApp.Autopackage {
             // -----------------------------------------------------------------------------------------------------------------------------------
             // Step 4 : Ensure digital signatures and strong names are all good to go
             foreach (var signRule in Source.SigningRules) {
-                var reSign = signRule.HasProperty("replace-signature") && signRule["replace-signature"].Value.IsTrue();
+                // var reSign = signRule.HasProperty("replace-signature") && signRule["replace-signature"].Value.IsTrue();
+                var reSign = true;
 
                 var filesToSign = FileList.ProcessIncludes(null, signRule, "signing", "include",Source.FileRules, Environment.CurrentDirectory);
                 foreach (var f in filesToSign) {
@@ -455,7 +456,7 @@ namespace CoApp.Autopackage {
 
                     if (reSign || !Verifier.HasValidSignature(file.SourcePath)) {
                         try {
-                            _tasks.Add(Binary.Load(file.SourcePath).ContinueWith(antecedent => {
+                            _tasks.Add(Binary.Load(file.SourcePath, BinaryLoadOptions.Resources | BinaryLoadOptions.Manifest).ContinueWith(antecedent => {
                                 if( antecedent.IsFaulted ) {
                                     Event<Error>.Raise(MessageCode.SigningFailed, null, "Failed to load binary '{0}'", file.SourcePath);
                                     return;

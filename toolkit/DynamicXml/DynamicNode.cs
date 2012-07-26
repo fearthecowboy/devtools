@@ -22,6 +22,7 @@ namespace CoApp.Toolkit.DynamicXml {
     ///   using c# 4.0 and the dynamic keyword
     /// </summary>
     public class DynamicNode : DynamicObject , IEnumerable<DynamicNode> {
+        protected XNamespace xmlns = null;
         /// <summary>
         ///   The XML Node this object is fronting for.
         /// </summary>
@@ -34,6 +35,7 @@ namespace CoApp.Toolkit.DynamicXml {
 
         public DynamicNode(XDocument document) {
             _element = document.Root;
+            xmlns = _element.Name.Namespace;
             
         }
 
@@ -43,6 +45,8 @@ namespace CoApp.Toolkit.DynamicXml {
         /// <param name = "element">An XElement node to use as the actual XML node for this DynamicXmlNode</param>
         public DynamicNode(XElement element) {
             _element = element;
+            xmlns = _element.Name.Namespace;
+            
         }
 
         /// <summary>
@@ -51,6 +55,7 @@ namespace CoApp.Toolkit.DynamicXml {
         /// <param name = "elementName">The new XElement node name to use as the actual XML node for this DynamicXmlNode</param>
         public DynamicNode(string elementName) {
             _element = new XElement(elementName);
+            xmlns = _element.Name.Namespace;
         }
 
         /// <summary>
@@ -102,10 +107,14 @@ namespace CoApp.Toolkit.DynamicXml {
                 var value = p[p.Length - 1] ;
 
                 // var match = _element.Descendants().Where(each => each.Attributes().Where(a => a.Name == attr && a.Value == value).Any()).FirstOrDefault();
-                var match = _element.Elements().Where(each => each.Attributes().Where(a => a.Name == attr && a.Value == value).Any()).FirstOrDefault();
+                var match = _element.Elements().FirstOrDefault(each => each.Attributes().Any(a => a.Name == attr && a.Value == value));
 
                 return match == null ? null : new DynamicNode(match);
             }
+        }
+
+        private XName ActualXName( string elementName) {
+            return xmlns == null ? (XName)elementName : xmlns + elementName;
         }
 
         /// <summary>
@@ -115,19 +124,22 @@ namespace CoApp.Toolkit.DynamicXml {
         /// <param name = "value">The value to set to the member. For example, for sampleObject.SampleProperty = "Test", where sampleObject is an instance of the class derived from the DynamicObject class, the value is "Test".</param>
         /// <returns>True, if successful</returns>
         public override bool TrySetMember(SetMemberBinder binder, object value) {
-            var setNode = _element.Element(binder.Name);
+
+
+            var setNode = _element.Element(ActualXName(binder.Name));
+
             if(setNode != null) {
                 setNode.SetValue(value);
             }
             else {
-                _element.Add(value.GetType() == typeof(DynamicNode) ? new XElement(binder.Name) : new XElement(binder.Name, value));
+                _element.Add(value.GetType() == typeof(DynamicNode) ? new XElement(ActualXName(binder.Name)) : new XElement(ActualXName(binder.Name), value));
             }
 
             return true;
         }
 
         public bool Has( string name ) {
-            return (_element.Element(name) != null);
+            return (_element.Element(ActualXName(name)) != null);
         }
 
         /// <summary>
@@ -138,15 +150,13 @@ namespace CoApp.Toolkit.DynamicXml {
         /// <param name = "result">The result of the get operation. For example, if the method is called for a property, you can assign the property value to result.</param>
         /// <returns>True if successful</returns>
         public override bool TryGetMember(GetMemberBinder binder, out object result) {
-            var getNode = _element.Element(binder.Name);
+            var getNode = _element.Element(ActualXName(binder.Name));
 
-            if(getNode != null) {
-                result = new DynamicNode(getNode);
-                return true;
+            if(getNode == null) {
+                getNode = new XElement(ActualXName(binder.Name));
+                _element.Add(getNode);
             }
 
-            getNode = new XElement(binder.Name);
-            _element.Add(getNode);
             result = new DynamicNode(getNode);
             return true;
         }
@@ -214,7 +224,7 @@ namespace CoApp.Toolkit.DynamicXml {
         /// <param name = "name">the new node name</param>
         /// <returns>the DynamicXmlNode for the new node</returns>
         public DynamicNode Add(string name) {
-            var e = new XElement(name);
+            var e = new XElement(ActualXName(name));
             _element.Add(e);
             return new DynamicNode(e);
         }
@@ -230,7 +240,7 @@ namespace CoApp.Toolkit.DynamicXml {
         }
 
         public DynamicNode Add(string name, string value) {
-            var e = new XElement(name) {Value = value};
+            var e = new XElement(ActualXName(name)) {Value = value};
             _element.Add(e);
             return new DynamicNode(e);
         }

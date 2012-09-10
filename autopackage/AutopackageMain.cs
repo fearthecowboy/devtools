@@ -220,7 +220,7 @@ namespace CoApp.Autopackage {
 
                         var template = PropertySheet.Parse(Resources.template_autopkg,null);
 
-                        PackageSource.ImportedSheets.Add("template", template);
+                        PackageSource.AddImportedSheet(template);
 
                         FindCertificate();
 

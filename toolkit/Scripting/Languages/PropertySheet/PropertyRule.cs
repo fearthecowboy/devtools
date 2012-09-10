@@ -19,29 +19,47 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
     /// <summary>
     ///   A RuleProperty represents a single property name, with potentially multiple property-labels, each label can have 1 or more values.
     /// </summary>
-    public class PropertyRule : DynamicObject {
+    public abstract class PropertyRule : DynamicObject {
         internal readonly Rule ParentRule;
-        private readonly List<PropertyValue> _propertyValues = new List<PropertyValue>();
         public SourceLocation SourceLocation { get; internal set; }
         public string Name { get; set; }
+        protected PropertyRule(Rule parent, string name) {
+            ParentRule = parent;
+            Name = name;
+        }
+
+        internal abstract string SourceString { get; }
+
+        public abstract IEnumerable<PropertyValue> PropertyValues { get; }
+
+        public abstract string Value { get; }
+        public abstract IEnumerable<string> Values { get; }
+        public abstract IEnumerable<string> Labels { get; }
+        public abstract bool HasValues { get; }
+        public abstract bool HasValue { get; }
+        public abstract IPropertyValue this[string label] { get; }
+        internal abstract PropertyValue GetPropertyValue(string label, IEnumerable<string> collections = null);
+    }
+
+    public class StandardPropertyRule : PropertyRule {
+        private readonly List<PropertyValue> _propertyValues = new List<PropertyValue>();
 
         /// <summary>
         ///   RuleProperty object must be created by the Rule.
         /// </summary>
         /// <param name="parent"> </param>
         /// <param name="name"> </param>
-        internal PropertyRule(Rule parent, string name) {
-            ParentRule = parent;
-            Name = name;
+        internal StandardPropertyRule(Rule parent, string name) : base( parent, name ){
         }
 
-        internal string SourceString {
+        internal override string SourceString {
             get {
                 return _propertyValues.Aggregate("", (current, v) => current + "    {0} : {1}".format(Name, v.SourceString));
             }
         }
 
-        public IEnumerable<PropertyValue> PropertyValues {
+
+        public override IEnumerable<PropertyValue> PropertyValues {
             get {
                 return _propertyValues.ToArray();
             }
@@ -56,38 +74,38 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             return result;
         }
 
-        public string Value {
+        public override string Value {
             get {
                 var v = this[string.Empty];
                 return v == null ? null : this[string.Empty].Value;
             }
         }
 
-        public IEnumerable<string> Values {
+        public override IEnumerable<string> Values {
             get {
                 return this[string.Empty] ?? Enumerable.Empty<string>();
             }
         }
 
-        public IEnumerable<string> Labels {
+        public override IEnumerable<string> Labels {
             get {
                 return _propertyValues.SelectMany(each => each.ResolvedLabels).Distinct();
             }
         }
 
-        public bool HasValues {
+        public override bool HasValues {
             get {
                 return _propertyValues.Count > 0;
             }
         }
 
-        public bool HasValue {
+        public override bool HasValue {
             get {
                 return _propertyValues.Count > 0;
             }
         }
 
-        public IPropertyValue this[string label] {
+        public override IPropertyValue this[string label] {
             get {
                 // looks up the property collection
                 return (from propertyValue in _propertyValues let actual = propertyValue.Actual(label) where actual != null select actual).FirstOrDefault();
@@ -98,7 +116,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             var primary = ParentRule.ParentPropertySheet.PreferDashedNames ? binder.Name.CamelCaseToDashed() : binder.Name;
             var secondary = ParentRule.ParentPropertySheet.PreferDashedNames ? binder.Name : binder.Name.CamelCaseToDashed();
 
-            result = GetPropertyValue(!_propertyValues.Where(each => each.Label == primary).Any() && _propertyValues.Where(each => each.Label == secondary).Any() ? secondary : primary);
+            result = GetPropertyValue(_propertyValues.All(each => each.Label != primary) && _propertyValues.Any(each => each.Label == secondary) ? secondary : primary);
             return true;
         }
 
@@ -108,8 +126,8 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
         /// <param name="label"> </param>
         /// <param name="collection"> </param>
         /// <returns> </returns>
-        internal PropertyValue GetPropertyValue(string label, IEnumerable<string> collections = null) {
-            var result = _propertyValues.Where(each => each.Label == label).FirstOrDefault();
+        internal override PropertyValue GetPropertyValue(string label, IEnumerable<string> collections = null) {
+            var result = _propertyValues.FirstOrDefault(each => each.Label == label);
             if (result == null) {
                 _propertyValues.Add(result = new PropertyValue(this, label, collections.IsNullOrEmpty() ? null : collections));
             }

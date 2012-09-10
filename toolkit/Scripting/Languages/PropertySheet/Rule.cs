@@ -15,6 +15,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
     using System.Dynamic;
     using System.Linq;
     using System.Text;
+    using CoApp.Toolkit.Exceptions;
     using CoApp.Toolkit.Extensions;
 
     public class Rule : DynamicObject {
@@ -49,7 +50,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
 
         public PropertyRule this[string propertyName] {
             get {
-                return _properties.Where(each => each.Name == propertyName).FirstOrDefault();
+                return _properties.FirstOrDefault(each => each.Name == propertyName);
             }
         }
 
@@ -107,9 +108,18 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
         internal PropertyRule GetRuleProperty(string name) {
             var property = this[name];
             if (property == null) {
-                property = new PropertyRule(this, name);
+                property = new StandardPropertyRule(this, name);
                 _properties.Add(property);
             }
+            return property;
+        }
+
+        internal ScriptedPropertyRule AddScriptedRuleProperty(string name, string type, string code, string sourceText) {
+            if( this[name] != null ) {
+                throw new CoAppException("Attempt to add the same scripted rule again. [{0}/{1}]".format(name,type));
+            }
+            var property = new ScriptedPropertyRule(this, name, type, code, sourceText);
+            _properties.Add(property);
             return property;
         }
 

@@ -28,7 +28,7 @@ namespace CoApp.Packaging {
         // all the different sets of rules 
         public IEnumerable<Rule> AllRules {
             get {
-                return Rules.Reverse();
+                return Rules;
             }
         }
 

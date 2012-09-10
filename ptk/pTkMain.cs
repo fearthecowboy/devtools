@@ -106,12 +106,6 @@ pTK [options] action [buildconfiguration...]
         /// </summary>
         private ProcessUtility _traceexe;
         
-        private string _gitcmd;
-        // private string _setenvcmd;
-        // private string _vcvars;
-        /// <summary>
-        /// Command line to git.cmd
-        /// </summary>
         // sdk batch file locations
         private string _setenvcmd71;
         private string _setenvcmd7;
@@ -121,6 +115,7 @@ pTK [options] action [buildconfiguration...]
         private string _wdksetenvcmd7600;
 
         // compiler batch file locations
+        private string _vcvarsallbat11;
         private string _vcvarsallbat10;
         private string _vcvarsallbat9;
         private string _vcvarsallbat8;
@@ -221,8 +216,6 @@ pTK [options] action [buildconfiguration...]
             }
         }
 
-
-
         private void SetSDK(string sdkName, string sdkBatchFile, string arch) {
             if (_verbose) {
                 using (new ConsoleColors(ConsoleColor.White, ConsoleColor.Black)) {
@@ -239,8 +232,10 @@ pTK [options] action [buildconfiguration...]
 
             if (string.IsNullOrEmpty(targetCpu) || (targetCpu == "x64" && arch == "x86") || (targetCpu == "x86" && arch != "x86")) {
 
-                if (string.IsNullOrEmpty(sdkBatchFile))
-                    throw new CoAppException("Cannot locate SDK SetEnv command for SDK ({0}). Please install the Windows SDK {0}".format(sdkName));
+                if (string.IsNullOrEmpty(sdkBatchFile)) {
+                    //throw new CoAppException("Cannot locate SDK SetEnv command for SDK ({0}). Please install the Windows SDK {0}".format(sdkName));
+                    return;
+                }
 
                 // Console.WriteLine(@"/c ""{0}"" /{1} & set ", _setenvcmd, arch == "x86" ? "x86" : "x64");
 
@@ -331,6 +326,10 @@ pTK [options] action [buildconfiguration...]
         private void SwitchCompiler(string compiler, string platform) {
            
             switch( compiler ) {
+                case "vc11":
+                    SetVCCompiler("Visual Studio 2012", _vcvarsallbat11, platform);
+                    break;
+
                 case "vc10":
                     SetVCCompiler("Visual Studio 2010", _vcvarsallbat10, platform);
                     break;
@@ -353,6 +352,10 @@ pTK [options] action [buildconfiguration...]
 
                 case "vc6":
                     SetVCCompiler("Visual Studio 98 (vc6)", _vcvars32bat, platform);
+                    break;
+
+                case "sdk8":
+                    SetVCCompiler("Visual Studio 2012", _vcvarsallbat11, platform);
                     break;
 
                 case "sdk7.1":
@@ -479,6 +482,10 @@ pTK [options] action [buildconfiguration...]
         private void SwitchSdk( string sdk, string platform ) {
 
             switch (sdk) {
+                case "sdk8":
+                    // SetSDK("Windows Sdk 8.0", _setenvcmd71, platform);
+                    break;
+
                 case "sdk7.1":
                     SetSDK("Windows Sdk 7.1", _setenvcmd71, platform);
                      break;
@@ -652,15 +659,15 @@ pTK [options] action [buildconfiguration...]
                     Console.WriteLine("Using git for verification");
                 }
                 // attemt to find git.cmd
-                _gitcmd = ProgramFinder.ProgramFilesAndDotNet.ScanForFile("git.cmd");
+              
                 _gitexe = null;
-                if (string.IsNullOrEmpty(_gitcmd)) {
+               
                     var f = ProgramFinder.ProgramFilesAndDotNet.ScanForFile("git.exe");
                     if (string.IsNullOrEmpty(f)) {
                         return Fail("Can not find git.cmd or git.exe (required to perform verification.)");
                     }
                     _gitexe = new ProcessUtility(ProgramFinder.ProgramFilesAndDotNet.ScanForFile("git.exe"));
-                }
+               
             }
 
             if (_useHg) {
@@ -704,6 +711,7 @@ pTK [options] action [buildconfiguration...]
             
             /// SDK Setenv (sdk2003): c:\program files (x86)\Microsoft SDK\SetEnv.bat
 
+            _vcvarsallbat11 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "**vc**", "**11.0**" }, rememberMissingFile: true, tagWithCosmeticVersion: "11.0");
             _vcvarsallbat10 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "**vc**", "**10.0**" }, rememberMissingFile: true, tagWithCosmeticVersion: "10.0");
             _vcvarsallbat9 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "**vc**", "**9.0**" }, rememberMissingFile: true, tagWithCosmeticVersion: "9.0");
             _vcvarsallbat8 = ProgramFinder.ProgramFilesAndDotNetAndSdk.ScanForFile("vcvarsall.bat", includeFilters: new[] { "**vc**", "**8**" }, rememberMissingFile: true, tagWithCosmeticVersion: "8");
@@ -722,10 +730,16 @@ pTK [options] action [buildconfiguration...]
             if (_setenvcmd6 != null) {
                 sdks.Add("sdk6");
             }
-
-            _originalEnvironment.AddOrSet("installed_sdks", sdks.Aggregate((s, s1) => s + ", " + s1));
+            if( sdks.Any() ) {
+                _originalEnvironment.AddOrSet("installed_sdks", sdks.Aggregate((s, s1) => s + ", " + s1));
+            }
+            
 
             var compilers = new List<string>();
+
+            if (_vcvarsallbat11 != null) {
+                compilers.Add("vc11");
+            }
 
             if( _vcvarsallbat10 != null ) {
                 compilers.Add("vc10");
@@ -746,11 +760,15 @@ pTK [options] action [buildconfiguration...]
                 compilers.Add("vc6");
             }
 
-            _originalEnvironment.AddOrSet("installed_compilers", sdks.Aggregate((s, s1) => s + ", " + s1));
+            if (compilers.Any()) {
+                _originalEnvironment.AddOrSet("installed_compilers", compilers.Aggregate((s, s1) => s + ", " + s1));
+            } else {
+                Fail("No C/C++ compilers are installed.");
+            }
 
             if (_showTools) {
                 if (_useGit) {
-                    Console.WriteLine("Git: {0}", _gitcmd ??  (_gitexe != null ? _gitexe.Executable : "Not-Found"));
+                    Console.WriteLine("Git: {0}", _gitexe != null ? _gitexe.Executable : "Not-Found");
                 }
                 if (_useHg) {
                     Console.WriteLine("hg: {0}", _hgexe.Executable);
@@ -759,6 +777,7 @@ pTK [options] action [buildconfiguration...]
                 Console.WriteLine("SDK Setenv (7.0): {0}", _setenvcmd7 ?? "Not-Found");
                 Console.WriteLine("SDK Setenv (6): {0}", _setenvcmd6 ?? "Not-Found");
 
+                Console.WriteLine("VC vcvarsall (11.0): {0}", _vcvarsallbat11 ?? "Not-Found");
                 Console.WriteLine("VC vcvarsall (10.0): {0}", _vcvarsallbat10 ?? "Not-Found");
                 Console.WriteLine("VC vcvarsall (9.0): {0}", _vcvarsallbat9 ?? "Not-Found");
                 Console.WriteLine("VC vcvarsall (8.0): {0}", _vcvarsallbat8 ?? "Not-Found");
@@ -921,8 +940,8 @@ pTK [options] action [buildconfiguration...]
                             let targets = build["targets"]
                             select new {
                                 Configuration = build.Name,
-                                Compiler = compiler != null ? compiler.Value : "sdk7.1",
-                                Sdk = sdk != null ? sdk.Value : "sdk7.1",
+                                Compiler = compiler != null ? compiler.Value : compilers.FirstOrDefault(),
+                                Sdk = sdk != null ? sdk.Value : sdks.FirstOrDefault() ?? "none",
                                 Platform = platform != null ? platform.Value.NormalizePlatform() : "x86",
                                 Number_of_Outputs = targets != null ? targets.Values.Count() : 0
                             }).ToArray();
@@ -1553,13 +1572,8 @@ REM ===================================================================
         /// Git ("status -s")
         /// </example>
         private IEnumerable<string> Git(string cmdLine) {
-            if( !string.IsNullOrEmpty(_gitcmd) ) {
-                _cmdexe.Exec(@"/c ""{0}"" {1}", _gitcmd, cmdLine);
-                return from line in _cmdexe.StandardOut.Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries) where !line.ToLower().Contains("copkg") select line;
-            } else {
-                _gitexe.Exec(cmdLine);
-                return from line in _gitexe.StandardOut.Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries) where !line.ToLower().Contains("copkg") select line;  
-            }
+            _gitexe.Exec(cmdLine);
+            return from line in _gitexe.StandardOut.Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries) where !line.ToLower().Contains("copkg") select line;  
         }
 
         /// <summary>

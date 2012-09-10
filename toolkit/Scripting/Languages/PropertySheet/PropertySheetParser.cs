@@ -52,26 +52,42 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
         }
 
         protected bool Import(string importFilename, string folder) {
-            string filename = importFilename.GetCustomFilePathOrWalkUp(folder) ?? importFilename;
-
-            if( string.IsNullOrEmpty(filename) || !File.Exists(filename)) {
+            if( string.IsNullOrEmpty(importFilename) ) {
                 return false;
             }
-
-            string document = File.ReadAllText(filename);
-
-            if (!string.IsNullOrEmpty(document)) {
-                var includedSheet = new PropertySheet();
-                // parse the contents of that file into the current property sheet.
-                new PropertySheetParser(document, filename, includedSheet).Parse();
-
-                foreach (var r in includedSheet.Rules) {
-                    r.ParentPropertySheet = _propertySheet;
-                }
-
-                _propertySheet.ImportedSheets.Add(filename, includedSheet);
+            
+            if( importFilename.IndexOf( "/" ) > -1 || importFilename.IndexOf("\\") > -1  ) {
+                // only load the file explicitly (since it's got a path character  in it.)
+                var actualFilename = importFilename.CanonicalizePath();
+                return File.Exists(actualFilename) && ImportContent(importFilename, actualFilename, File.ReadAllText(actualFilename));
             }
-            return true;
+
+            return importFilename.GetAllCustomFilePaths(folder).Aggregate(false, (current, actualFilename) => current | ImportContent(importFilename, actualFilename, File.ReadAllText(actualFilename)));
+        }
+
+        private bool ImportContent(string importedAsFilename, string actualFilename, string textContent) {
+            if (!string.IsNullOrEmpty(textContent)) {
+                _propertySheet.AddImportedSheet(ParseIncludedSheet(importedAsFilename, actualFilename, textContent));
+                return true;
+            }
+            return false;
+        }
+
+        private PropertySheet ParseIncludedSheet(string importedAsFilename, string actualFilename, string textContent) {
+            var includedSheet = new PropertySheet() {
+                Filename = actualFilename,
+                ImportedAsFilename = importedAsFilename
+            };
+
+            // parse the contents of that file into the current property sheet.
+            new PropertySheetParser(textContent, actualFilename, includedSheet).Parse();
+
+            // make sure each rule has the parent propertysheet set to the master.
+            // since the exposed Rules collection is recursive, this sets the value all the way down...
+            foreach (var r in includedSheet.Rules) {
+                r.ParentPropertySheet = _propertySheet;
+            }
+            return includedSheet;
         }
 
         protected PropertySheet Parse() {
@@ -83,9 +99,10 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
 
             // first, check for a .user file to auto-import
             if(!string.IsNullOrEmpty(_filename) ) {
-                var fullPath = _filename.GetFullPath();
-                startFolder = Path.GetDirectoryName(fullPath) + "\\";
-                Import(Path.GetFileName(fullPath) + ".user", startFolder);                
+                var userSheetFilename = Path.Combine(startFolder, Path.GetFileName(_filename.GetFullPath()) + ".user");
+                if (File.Exists(userSheetFilename)) {
+                    _propertySheet.UserOverride = ParseIncludedSheet(null, userSheetFilename, File.ReadAllText(userSheetFilename));
+                }
             }
 
             Token token;
@@ -96,7 +113,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             string ruleClass = null;
             string ruleId = null;
 
-            PropertyRule property = null;
+            // PropertyRule property = null;
 
             var sourceLocation = new SourceLocation {
                 Row=0,
@@ -206,12 +223,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                             case TokenType.OpenBrace:
                                 state = ParseState.InRule;
 
-                                // property sheets now merge rules when redefined.
-                                // if( _propertySheet.HasRule(ruleName, ruleParameter, ruleClass, ruleId) ) {
-                                   // throw new EndUserParseException(token, _filename, "PSP 113", "Duplicate rule with identical selector not allowed: {0} ", Rule.CreateSelectorString(ruleName, ruleParameter,ruleClass, ruleId )); 
-                                // }
-
-                                rule = _propertySheet.GetRule(ruleName, ruleParameter, ruleClass, ruleId);
+                                rule = _propertySheet[ruleName, ruleParameter, ruleClass, ruleId];
                                 
                                 ruleName = null;
                                 ruleParameter = null;
@@ -278,7 +290,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                         switch (token.Type) {
                             case TokenType.Colon:
                                 state = ParseState.HavePropertySeparator;
-                                property = rule.GetRuleProperty(propertyName);
+                                // property = rule.GetRuleProperty(propertyName);
                                 continue;
 
                             default:
@@ -315,10 +327,53 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                         switch (token.Type) {
                             case TokenType.StringLiteral:
                             case TokenType.NumericLiteral:
-                            case TokenType.Identifier:
+                            case TokenType.Identifier: {
                                 // at this point it could be a collection, a label, or a value.
                                 presentlyUnknownValue = token.Data;
                                 state = ParseState.InPropertyCollectionWithoutLabelButHaveSomething;
+                                
+                                // we're going to peek ahead and see if there is any characters we want to accept. (#.-+)
+                                var peek = enumerator;
+                                var cont = true;
+                                var okToTakeIdentifierOrNumeric = false;
+                                do {
+                                    if (!peek.MoveNext() ) {
+                                        break;
+                                    }
+                                    // if we find a character that we consider to be ok for labels here, we're going to add it in, and consume the token.
+                                    switch( peek.Current.Type ) {
+                                        
+                                        case TokenType.Pound:
+                                        case TokenType.Dot:
+                                        case TokenType.Minus:
+                                        case TokenType.MinusMinus:
+                                        case TokenType.Plus:
+                                        case TokenType.PlusPlus:
+                                            enumerator.MoveNext();
+                                            presentlyUnknownValue = presentlyUnknownValue + enumerator.Current.Data;
+                                            okToTakeIdentifierOrNumeric = true;
+                                            break;
+
+                                        case TokenType.NumericLiteral:
+                                        case TokenType.Identifier:
+                                            if (!okToTakeIdentifierOrNumeric) {
+                                                cont = false;
+                                                break;
+                                            }
+
+                                            enumerator.MoveNext();
+                                            presentlyUnknownValue = presentlyUnknownValue + enumerator.Current.Data;
+                                            okToTakeIdentifierOrNumeric = false;
+                                            break;
+
+                                        default:
+                                            cont = false;
+                                            break;
+
+                                    }
+
+                                } while (cont);
+                            }
                                 continue;
 
                             case TokenType.CloseBrace:
@@ -393,7 +448,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
 
                             case TokenType.Comma: {
                                     // turns out its a simple collection item.
-                                    var pv = property.GetPropertyValue(string.Empty);
+                                var pv = rule.GetRuleProperty(propertyName).GetPropertyValue(string.Empty);
                                     pv.Add(presentlyUnknownValue);
                                     pv.SourceLocation = sourceLocation;
                                     presentlyUnknownValue = null;
@@ -403,19 +458,46 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
 
                             case TokenType.CloseBrace: {
                                     // turns out its a simple collection item.
-                                    var pv = property.GetPropertyValue(string.Empty);
+                                var pv = rule.GetRuleProperty(propertyName).GetPropertyValue(string.Empty);
                                     pv.Add(presentlyUnknownValue);
                                     pv.SourceLocation = sourceLocation;
                                     presentlyUnknownValue = null;
                                     // state = ParseState.HavePropertyCompleted;
                                     // this makes the semicolon optional.
                                     state = ParseState.InRule;
-
                                 }
                                 continue;
 
+                            case TokenType.OpenBracket:
+                            case TokenType.OpenBrace:
+                            case TokenType.OpenParenthesis:
+                            case TokenType.LessThan:
+                                    // starting a new script block
+                                    // presentlyUnknownValue is the script type
+                                    // the content goes until the matching close token.
+                                continue;
+
+                            case TokenType.Identifier:
+                            case TokenType.NumericLiteral:
+                            case TokenType.StringLiteral:
+                                // starting a new script block
+                                // presentlyUnknownValue is the script type
+                                // the content of the string literal is the script content
+                                rule.AddScriptedRuleProperty(propertyName, presentlyUnknownValue, token.Data, token.Data);
+                                
+                                continue;
+
                             default:
+                                string tokentext = token.RawData.ToString();
+                                if (tokentext.Length == 1) {
+                                    // starting a new script block
+                                    // presentlyUnknownValue is the script type
+                                    // the content goes until we see that same token again.
+                                    continue;
+                                }
+
                                 throw new EndUserParseException(token, _filename, "PSP 114", "after an value or identifier in a collection expected a '=>' or '=' or ',' .");
+                                
                         }
 
                     case  ParseState.HasEqualsInCollection :
@@ -423,7 +505,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                             case TokenType.StringLiteral:
                             case TokenType.NumericLiteral:
                             case TokenType.Identifier: {
-                                    var pv = property.GetPropertyValue(propertyLabelText);
+                                var pv = rule.GetRuleProperty(propertyName).GetPropertyValue(propertyLabelText);
                                     pv.Add(token.Data);
                                     pv.SourceLocation = sourceLocation;
                                     state = ParseState.InPropertyCollectionWithoutLabelWaitingForComma;
@@ -467,7 +549,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                                     pv.Add("${DEFAULTLAMBDAVALUE}");
                                  */
 
-                                    var pv = property.GetPropertyValue("", multidimensionalLambda);
+                                var pv = rule.GetRuleProperty(propertyName).GetPropertyValue("", multidimensionalLambda);
                                     pv.Add(propertyLabelText);
 
                                     pv.SourceLocation = sourceLocation;
@@ -496,7 +578,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                             case TokenType.StringLiteral:
                             case TokenType.NumericLiteral:
                             case TokenType.Identifier: {
-                                var pv = property.GetPropertyValue(propertyLabelText, multidimensionalLambda);
+                                var pv = rule.GetRuleProperty(propertyName).GetPropertyValue(propertyLabelText, multidimensionalLambda);
                                     pv.Add(token.Data);
                                     pv.SourceLocation = sourceLocation;
                                     propertyLabelText = null;
@@ -551,7 +633,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                         switch (token.Type) {
                             case TokenType.Semicolon:
                             case TokenType.Comma: {
-                                    var pv = property.GetPropertyValue(propertyLabelText);
+                                var pv = rule.GetRuleProperty(propertyName).GetPropertyValue(propertyLabelText);
                                     pv.Add(presentlyUnknownValue);
                                     pv.SourceLocation = sourceLocation;
                                     // propertyLabelText = null;
@@ -560,7 +642,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                                 continue;
 
                             case TokenType.CloseBrace: {
-                                    var pv = property.GetPropertyValue(propertyLabelText);
+                                var pv = rule.GetRuleProperty(propertyName).GetPropertyValue(propertyLabelText);
                                     pv.Add(presentlyUnknownValue);
                                     pv.SourceLocation = sourceLocation;
                                     propertyLabelText = null;
@@ -598,7 +680,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                             case TokenType.Semicolon: {
                                     // it turns out that what we thought the label was, is really the property value,
                                     // the label is an empty string
-                                    var pv = property.GetPropertyValue(string.Empty);
+                                var pv = rule.GetRuleProperty(propertyName).GetPropertyValue(string.Empty);
                                     pv.Add(propertyLabelText);
                                     pv.SourceLocation = sourceLocation;
                                     propertyName = propertyLabelText = null;
@@ -616,7 +698,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                             case TokenType.StringLiteral:
                             case TokenType.NumericLiteral: {
                                     // found our property-value. add it, and move along.
-                                    var pv = property.GetPropertyValue(propertyLabelText);
+                                var pv = rule.GetRuleProperty(propertyName).GetPropertyValue(propertyLabelText);
                                     pv.Add(token.Data);
                                     pv.SourceLocation = sourceLocation;
                                     propertyName = propertyLabelText = null;

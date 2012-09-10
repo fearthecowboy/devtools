@@ -10,7 +10,6 @@
 // </license>
 //-----------------------------------------------------------------------
 
-
 namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
     using System;
     using System.Collections.Generic;
@@ -18,13 +17,16 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
     using System.IO;
     using System.Linq;
     using System.Text.RegularExpressions;
-    using CoApp.Toolkit.Collections;
     using CoApp.Toolkit.Extensions;
 
     public class PropertySheet : DynamicObject {
+        public string Filename { get; internal set; }
+        public string ImportedAsFilename { get; internal set; }
+
         private static readonly Regex Macro = new Regex(@"(\$\{(.*?)\})");
         private readonly List<Rule> _rules = new List<Rule>();
-        private readonly IDictionary<string, PropertySheet> _importedSheets = new XDictionary<string, PropertySheet>();
+        private readonly List<PropertySheet> _importedSheets = new List<PropertySheet>();
+        internal PropertySheet UserOverride;
 
         public delegate IEnumerable<object> GetCollectionDelegate(string collectionName);
 
@@ -34,32 +36,14 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
 
         public GetCollectionDelegate GetCollection;
 
-        public string Filename { get; internal set; }
-
-        public IDictionary<string, PropertySheet> ImportedSheets {
-            get {
-                return _importedSheets;
-            }
-        } 
-
-        public bool HasRules {
-            get {
-                return Rules.Any();
-            }
-        }
-
-        public bool HasRule(string name = "*", string parameter = null, string @class = null, string id = null) {
-            return (from rule in Rules
-                    where rule.Name == name &&
-                        (string.IsNullOrEmpty(parameter) ? null : parameter) == rule.Parameter &&
-                            (string.IsNullOrEmpty(@class) ? null : @class) == rule.Class &&
-                                (string.IsNullOrEmpty(id) ? null : id) == rule.Id
-                    select rule).Any();
+        public void AddImportedSheet(PropertySheet importedSheet) {
+            _importedSheets.Insert(0, importedSheet);
         }
 
         public IEnumerable<Rule> Rules {
             get {
-                return _importedSheets.Values.SelectMany(each => each.Rules).Union(_rules);
+                return UserOverride == null ? _rules.Union(_importedSheets.SelectMany(each => each.Rules)) : 
+                UserOverride.Rules.Union(_rules).Union(_importedSheets.SelectMany(each => each.Rules));
             }
         }
 
@@ -69,18 +53,40 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             }
         }
 
-        public IEnumerable<Rule> this[string name] {
-            get { return from r in Rules where r.Name == name select r; }
+        public Rule AddRule(string name = "*", string parameter = null, string @class = null, string id = null) {
+            Rule result;
+            _rules.Insert(0, result = new Rule(this) {
+                Name = name,
+                Parameter = parameter,
+                Class = @class,
+                Id = id,
+            });
+            return result;
+        }
+
+        public Rule this[string name = "*", string parameter = null, string @class = null, string id = null] {
+            get {
+                return SelectRules(name, parameter, @class, id).FirstOrDefault() ?? AddRule(name, parameter, @class, id);
+            }
+        }
+
+        public IEnumerable<Rule> SelectRules(string name = "*", string parameter = null, string @class = null, string id = null) {
+            return from rule in Rules
+                where rule.Name == name &&
+                    parameter.EqualsEx(rule.Parameter) &&
+                    @class.EqualsEx(rule.Class) &&
+                    id.EqualsEx(rule.Id)
+                select rule;
         }
 
         public static PropertySheet Parse(string text, string originalFilename) {
-            return PropertySheetParser.Parse(text, originalFilename);
+            var result = PropertySheetParser.Parse(text, originalFilename);
+            result.Filename = originalFilename;
+            return result;
         }
 
         public static PropertySheet Load(string path) {
-            var result = Parse(File.ReadAllText(path),path);
-            result.Filename = path;
-            return result;
+            return Parse(File.ReadAllText(path), path);
         }
 
         public virtual void Save(string path) {
@@ -88,14 +94,14 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
         }
 
         internal string ResolveMacros(string value, object[] eachItems = null) {
-            if( PreprocessProperty != null) {
+            if (PreprocessProperty != null) {
                 foreach (StringExtensions.GetMacroValueDelegate preprocess in PreprocessProperty.GetInvocationList()) {
                     value = preprocess(value);
                 }
             }
-            
+
             if (GetMacroValue != null) {
-                value = ProcessMacroInternal(value, eachItems);    
+                value = ProcessMacroInternal(value, eachItems);
             }
 
             if (PostprocessProperty != null) {
@@ -114,7 +120,6 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             }
 
             do {
-                
                 keepGoing = false;
 
                 var matches = Macro.Matches(value);
@@ -145,11 +150,10 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                                     value = value.Replace(outerMacro, eachItems[ndx].ToString());
                                     keepGoing = true;
                                 }
-                            }
-                            else {
+                            } else {
                                 if (innerMacro.Contains(".")) {
                                     var indexOfDot = innerMacro.IndexOf('.');
-                                    ndx = GetIndex(innerMacro.Substring(0,indexOfDot));
+                                    ndx = GetIndex(innerMacro.Substring(0, indexOfDot));
                                     if (ndx >= 0) {
                                         if (ndx < eachItems.Length) {
                                             innerMacro = innerMacro.Substring(indexOfDot + 1).Trim();
@@ -164,8 +168,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
                                     }
                                 }
                             }
-                        }
-                        catch {
+                        } catch {
                             // meh. screw em'
                         }
                     }
@@ -180,7 +183,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
             return value;
         }
 
-        private int GetIndex( string innerMacro ) {
+        private int GetIndex(string innerMacro) {
             int ndx;
             if (!Int32.TryParse(innerMacro, out ndx)) {
                 return innerMacro.Equals("each", StringComparison.CurrentCultureIgnoreCase) ? 0 : -1;
@@ -189,37 +192,8 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
         }
 
         public override string ToString() {
-
-            var imports = _importedSheets.Keys.Aggregate("",(current, each) => current + "@import {0};\r\n".format(QuoteIfNeeded(each)));
-            return _rules.Aggregate(imports, (current, each) => current + each.SourceString);
-        }
-
-        /// <summary>
-        /// Gets a rule by the selector criteria. If the rule doesn't exists, it creates it and adds it to the propertysheet.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="parameter"></param>
-        /// <param name="class"></param>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public Rule GetRule( string name = "*" , string parameter = null, string @class = null , string id = null ) {
-            var r = (from rule in Rules
-            where rule.Name == name &&
-                (string.IsNullOrEmpty(parameter) ? null : parameter) == rule.Parameter &&
-                    (string.IsNullOrEmpty(@class) ? null : @class) == rule.Class &&
-                        (string.IsNullOrEmpty(id) ? null : id) == rule.Id
-            select rule).FirstOrDefault();
-
-            if( r == null ) {
-                _rules.Add(r = new Rule(this) {
-                    Name = name,
-                    Parameter = parameter,
-                    Class = @class,
-                    Id = id,
-                });
-            }
-            
-            return r;
+            var imports = (from sheet in _importedSheets where sheet.ImportedAsFilename != null select ImportedAsFilename).Distinct().Aggregate("", (current, each) => current + "@import {0};\r\n".format(QuoteIfNeeded(each)));
+            return (_rules as IEnumerable<Rule>).Reverse().Aggregate(imports, (current, each) => current + each.SourceString);
         }
 
         public bool PreferDashedNames { get; set; }
@@ -233,7 +207,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
 
             switch (val.Length) {
                 case 0:
-                    result = GetRule(PreferDashedNames ? alternateName :binder.Name); // we'll implicity add one by this name.
+                    result = this[PreferDashedNames ? alternateName : binder.Name]; // we'll implicity add one by this name.
                     break;
                 case 1:
                     result = val[0]; // will return the single item *as* a single item.
@@ -246,11 +220,11 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
         }
 
         internal static string QuoteIfNeeded(string val) {
-            if( val == null ) {
+            if (val == null) {
                 return "<null>";
             }
 
-            if( val.IsNullOrEmpty()) {
+            if (val.IsNullOrEmpty()) {
                 return @"""""";
             }
 

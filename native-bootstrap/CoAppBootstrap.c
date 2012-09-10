@@ -7,7 +7,7 @@
 #define _WIN32_WINNT _WIN32_WINNT_WS03 
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
 
-#include <SDKDDKVer.h>
+// #include <SDKDDKVer.h>
 #include <windows.h>
 #include <Shellapi.h>
 
@@ -801,11 +801,8 @@ void ElevateSelf(const wchar_t* pszCmdLine) {
 int WINAPI wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, wchar_t* pszCmdLine, int nCmdShow) {
 	wchar_t *p;
     INITCOMMONCONTROLSEX iccs;
-    BOOL bIsInJob;
-    ApplicationInstance = hInstance;
     
-    // IsProcessInJob( GetCurrentProcess(), NULL, &bIsInJob );
-    // DebugPrintf(L"Is in job: %hx", bIsInJob);
+    ApplicationInstance = hInstance;
 
 	// Elevate the process if it is not run as administrator.
 	ElevateSelf(pszCmdLine);

@@ -17,7 +17,7 @@ namespace CoApp.Developer.Toolkit.Scripting.Languages.PropertySheet {
     using System.Linq;
     using CoApp.Toolkit.Extensions;
 
-    public class PropertyValue : IPropertyValue {
+    public class PropertyValue :  IPropertyValue {
         private static readonly IEnumerable<object>[] NoCollection = new[] {"".SingleItemAsEnumerable()};
 
         internal readonly string[] _collectionNames;

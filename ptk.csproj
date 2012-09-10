@@ -77,8 +77,12 @@
     <Content Include="$(SolutionDir)resources\CoApp.ico" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="default.tooldefs" />
+    <None Include="script-handlers.propertysheet" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="developer.toolkit.csproj">
-      <Project>{E1BC4727-C201-44D4-9B73-78D20BD55D5C}</Project>
+      <Project>{e1bc4727-c201-44d4-9b73-78d20bd55d5c}</Project>
       <Name>developer.toolkit</Name>
     </ProjectReference>
   </ItemGroup>

@@ -8,6 +8,7 @@
 }
 
 publish-current { 
+    compiler:"vc11";
     build-command : @"
     for /F %%G in ('dir /s /b /o-n  coapp.devtools*.msi') do ( 
         curl -T %%G http://coapp.org/upload/current/
@@ -17,6 +18,7 @@ publish-current {
 
 
 private {
+    compiler:"vc11";
     set : release_dir = @"output\any\Release\bin\";
     set : repo_dir = @"..\azure-scripts\private\reposervice\";
     set : pkgs_dir = @"..\azure-scripts\private\pkgs\";
@@ -35,6 +37,7 @@ private {
 }
 
 release { 
+    compiler:"vc11";
     default : true;
     // builds the binaries in "Release" mode but does not sign them.
     set : cfg = "Release";
@@ -49,6 +52,7 @@ release {
 }
 
 package { 
+    compiler:"vc11";
     default: false;
     set : cfg = "Release";
     uses : sign;
@@ -66,6 +70,7 @@ package {
 }
 
 upload {
+    compiler:"vc11";
     default: false;
     uses : install;
     build-command: @"
@@ -77,6 +82,7 @@ upload {
 }
 
 install {
+    compiler:"vc11";
     default: false;
     set : cfg = "Release";
     uses : package;
@@ -89,6 +95,7 @@ install {
 }
 
 debug {
+    compiler:"vc11";
     // builds binaries in debug mode
     default: false;
     set : cfg = "Debug";
@@ -101,6 +108,7 @@ debug {
 
 
 sign { 
+    compiler:"vc11";
     // builds all the binaries in "Release" mode and digitally signs and 
     // strong-names the binaries.
     
@@ -127,6 +135,7 @@ sign {
 
 
 export {
+    compiler:"vc11";
     set : release_dir = @"output\any\Release\bin\";
     set : tools_dir = @"..\tools\";
     
@@ -162,13 +171,13 @@ export {
 anycpu {
     default: no;
     platform : x86;
-    compiler: vc10;
+    compiler: vc11;
     
     uses: clean;
     
     targets: { 
         @"output\any\${cfg}\bin\managed-bootstrap.exe",
-        @"output\any\${cfg}\bin\native-bootstrap.exe",
+        // @"output\any\${cfg}\bin\native-bootstrap.exe",
         @"output\any\${cfg}\bin\autopackage.exe",
         @"output\any\${cfg}\bin\debugwatch.exe",
         @"output\any\${cfg}\bin\Azure.exe",
@@ -187,8 +196,8 @@ anycpu {
     build-command: @"
         
         REM build the native-bootstrapper first
-        msbuild  /p:Configuration=${cfg} ""/p:Platform=win32"" /p:SolutionDir=..\ native-bootstrap\bootstrap.vcxproj  || goto failed
-        xcopy /d /y output\any\${cfg}\bin\native-bootstrap.exe binaries\
+        REM msbuild  /p:Configuration=${cfg} ""/p:Platform=win32"" /p:SolutionDir=..\ native-bootstrap\bootstrap.vcxproj  || goto failed
+        REM xcopy /d /y output\any\${cfg}\bin\native-bootstrap.exe binaries\
         
         REM then build the managed-bootstrapper 
         msbuild  /p:Configuration=${cfg} /p:Platform=ANYCPU /p:SolutionDir=.\ managed-bootstrap.csproj  || goto failed
@@ -200,6 +209,7 @@ anycpu {
 }
 
 clean {
+    compiler:"vc11";
     default: no;
 
     clean-command: @"

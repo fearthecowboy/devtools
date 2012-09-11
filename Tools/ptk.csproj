@@ -81,7 +81,7 @@
     <None Include="script-handlers.propertysheet" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CoApp.Developer.Toolkit.csproj">
+    <ProjectReference Include="..\Libraries\CoApp.Developer.Toolkit.csproj">
       <Project>{e1bc4727-c201-44d4-9b73-78d20bd55d5c}</Project>
       <Name>CoApp.Developer.Toolkit</Name>
     </ProjectReference>

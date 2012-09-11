@@ -4,14 +4,13 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{DA1115B4-0FCF-435B-BEA6-4D42457DFDC5}</ProjectGuid>
+    <ProjectGuid>{764BC144-AAA6-4E2E-B3CF-613E268584D7}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CoApp</RootNamespace>
-    <AssemblyName>CoApp.Scripting</AssemblyName>
+    <AssemblyName>CoApp.Azure</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -21,6 +20,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -34,42 +34,50 @@
     <ApplicationIcon>$(SolutionDir)resources\CoApp.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="coapp.toolkit" />
+    <Reference Include="CoApp.Toolkit">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
     <Reference Include="Microsoft.PowerShell.Commands.Management, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\WindowsPowerShell\v1.0\Microsoft.PowerShell.Commands.Management.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.PowerShell.ConsoleHost, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\WindowsPowerShell\v1.0\Microsoft.PowerShell.ConsoleHost.dll</HintPath>
-    </Reference>
+    <Reference Include="Microsoft.WindowsAzure.StorageClient, Version=1.7.0.22, Culture=neutral, PublicKeyToken=1e373a58e25250cb, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\WindowsPowerShell\v1.0\System.Management.Automation.dll</HintPath>
     </Reference>
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(SolutionDir)Source\CoApp.Devtools.AssemblyStrongName.cs" />
+    <Compile Include="Azure\Commands\GetUploadLocation.cs" />
+    <Compile Include="Azure\Provider\AzureLocation.cs" />
+    <Compile Include="Azure\Provider\AzureProviderInfo.cs" />
+    <Compile Include="Azure\Provider\AzureDriveInfo.cs" />
+    <Compile Include="Azure\Provider\AzureProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(SolutionDir)resources\CoApp.ico" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(SolutionDir)Source\CoApp.Devtools.AssemblyStrongName.cs" />
-    <Compile Include="Scripting\Commands\RestableCmdLet.cs" />
-    <Compile Include="Scripting\Commands\StartRestService.cs" />
-    <Compile Include="Scripting\Commands\StopRestService.cs" />
-    <Compile Include="Scripting\Powershell\DynamicPowershell.cs" />
-    <Compile Include="Scripting\Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Azure\Provider\Azure.format.ps1xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Libraries\CoApp.Developer.Toolkit.csproj">
-      <Project>{E1BC4727-C201-44D4-9B73-78D20BD55D5C}</Project>
+      <Project>{e1bc4727-c201-44d4-9b73-78d20bd55d5c}</Project>
       <Name>CoApp.Developer.Toolkit</Name>
+    </ProjectReference>
+    <ProjectReference Include="Provider.csproj">
+      <Project>{e3293143-fa7c-45df-84fa-fa5bf5642d6e}</Project>
+      <Name>Provider</Name>
+    </ProjectReference>
+    <ProjectReference Include="Scripting.csproj">
+      <Project>{da1115b4-0fcf-435b-bea6-4d42457dfdc5}</Project>
+      <Name>Scripting</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

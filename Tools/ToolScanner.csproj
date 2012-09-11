@@ -65,7 +65,7 @@
     <Content Include="$(SolutionDir)resources\CoApp.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CoApp.Developer.Toolkit.csproj">
+    <ProjectReference Include="..\Libraries\CoApp.Developer.Toolkit.csproj">
       <Project>{E1BC4727-C201-44D4-9B73-78D20BD55D5C}</Project>
       <Name>CoApp.Developer.Toolkit</Name>
     </ProjectReference>

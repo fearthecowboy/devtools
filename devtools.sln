@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "autopackage", "autopackage.csproj", "{D1102D1E-7ACE-4A81-96B8-36DA12310001}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "autopackage", "Tools\autopackage.csproj", "{D1102D1E-7ACE-4A81-96B8-36DA12310001}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2C4DBA1B-1271-499E-B3F5-8F699CD75ADB} = {2C4DBA1B-1271-499E-B3F5-8F699CD75ADB}
 		{5E958A69-637E-4807-8DCE-5DDA6B254AFE} = {5E958A69-637E-4807-8DCE-5DDA6B254AFE}
@@ -22,35 +22,35 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoApp.CCI", "Libraries\CoAp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoApp.Developer.Toolkit", "Libraries\CoApp.Developer.Toolkit.csproj", "{E1BC4727-C201-44D4-9B73-78D20BD55D5C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuickTool", "QuickTool.csproj", "{8E2605A9-54DF-4E63-ABA8-27D5C03DAC09}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuickTool", "Tools\QuickTool.csproj", "{8E2605A9-54DF-4E63-ABA8-27D5C03DAC09}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E1BC4727-C201-44D4-9B73-78D20BD55D5C} = {E1BC4727-C201-44D4-9B73-78D20BD55D5C}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scan", "Scan.csproj", "{5E958A69-637E-4807-8DCE-5DDA6B254AFE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scan", "Tools\Scan.csproj", "{5E958A69-637E-4807-8DCE-5DDA6B254AFE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E1BC4727-C201-44D4-9B73-78D20BD55D5C} = {E1BC4727-C201-44D4-9B73-78D20BD55D5C}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "simplesigner", "simplesigner.csproj", "{B2C3433E-931E-4D52-848E-A178B16E954C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "simplesigner", "Tools\simplesigner.csproj", "{B2C3433E-931E-4D52-848E-A178B16E954C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ToolScanner", "ToolScanner.csproj", "{FB140878-E3E6-41A9-B4F5-7AEF4D624E85}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ToolScanner", "Tools\ToolScanner.csproj", "{FB140878-E3E6-41A9-B4F5-7AEF4D624E85}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E1BC4727-C201-44D4-9B73-78D20BD55D5C} = {E1BC4727-C201-44D4-9B73-78D20BD55D5C}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ptk", "ptk.csproj", "{C0A44000-B786-43FE-B14F-AB411403B499}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ptk", "Tools\ptk.csproj", "{C0A44000-B786-43FE-B14F-AB411403B499}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E1BC4727-C201-44D4-9B73-78D20BD55D5C} = {E1BC4727-C201-44D4-9B73-78D20BD55D5C}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OAuthTool", "OAuthTool.csproj", "{2C4DBA1B-1271-499E-B3F5-8F699CD75ADB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OAuthTool", "Tools\OAuthTool.csproj", "{2C4DBA1B-1271-499E-B3F5-8F699CD75ADB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebugWatch", "DebugWatch.csproj", "{040B59F0-2C20-4603-AB6B-59D474B84F26}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebugWatch", "Tools\DebugWatch.csproj", "{040B59F0-2C20-4603-AB6B-59D474B84F26}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Packaging", "Libraries\Packaging.csproj", "{2356FC45-A1C0-40C5-B423-57CC4536AD18}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scripting", "Scripting.csproj", "{DA1115B4-0FCF-435B-BEA6-4D42457DFDC5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scripting", "Powershell\Scripting.csproj", "{DA1115B4-0FCF-435B-BEA6-4D42457DFDC5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libraries", "Libraries", "{81B0D07C-B069-410B-AA00-77AA065B1FDC}"
 EndProject
@@ -60,7 +60,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Powershell", "Powershell", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Bootstrappers", "Bootstrappers", "{82657964-3A4D-4B56-B20E-DCC3799C4856}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Provider", "Provider.csproj", "{E3293143-FA7C-45DF-84FA-FA5BF5642D6E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Provider", "Powershell\Provider.csproj", "{E3293143-FA7C-45DF-84FA-FA5BF5642D6E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azure", "Powershell\Azure.csproj", "{764BC144-AAA6-4E2E-B3CF-613E268584D7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -162,6 +164,12 @@ Global
 		{E3293143-FA7C-45DF-84FA-FA5BF5642D6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E3293143-FA7C-45DF-84FA-FA5BF5642D6E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E3293143-FA7C-45DF-84FA-FA5BF5642D6E}.Release|Win32.ActiveCfg = Release|Any CPU
+		{764BC144-AAA6-4E2E-B3CF-613E268584D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{764BC144-AAA6-4E2E-B3CF-613E268584D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{764BC144-AAA6-4E2E-B3CF-613E268584D7}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{764BC144-AAA6-4E2E-B3CF-613E268584D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{764BC144-AAA6-4E2E-B3CF-613E268584D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{764BC144-AAA6-4E2E-B3CF-613E268584D7}.Release|Win32.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -182,5 +190,6 @@ Global
 		{7B8CB73A-D762-44F4-B0AA-95840A29A019} = {81B0D07C-B069-410B-AA00-77AA065B1FDC}
 		{DA1115B4-0FCF-435B-BEA6-4D42457DFDC5} = {CB23ED78-8D56-476F-897C-11AB5A1CB69F}
 		{E3293143-FA7C-45DF-84FA-FA5BF5642D6E} = {CB23ED78-8D56-476F-897C-11AB5A1CB69F}
+		{764BC144-AAA6-4E2E-B3CF-613E268584D7} = {CB23ED78-8D56-476F-897C-11AB5A1CB69F}
 	EndGlobalSection
 EndGlobal

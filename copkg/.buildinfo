@@ -17,25 +17,6 @@ publish-current {
 }
 
 
-private {
-    compiler:"vc11";
-    set : release_dir = @"output\any\Release\bin\";
-    set : repo_dir = @"..\azure-scripts\private\reposervice\";
-    set : pkgs_dir = @"..\azure-scripts\private\pkgs\";
-    uses: install;
-    build-command: @"
-    xcopy /Q /D /Y  ""${release_dir}repositoryservice.exe""  ""${repo_dir}"" || goto failed
-     
-    for /F %%G in ('dir /s /b /o-n  coapp.devtools*.msi') do ( 
-        erase ""${pkgs_dir}\coapp.devtools*.msi"" > nul 2>&1
-        xcopy /Q /D /Y  %%G  ""${pkgs_dir}"" || goto failed
-        az copy %%G files: || goto failed
-        echo http://coapp.blob.core.windows.net/files/%%~nxG
-        goto :eof
-    )
-    ";    
-}
-
 release { 
     compiler:"vc11";
     default : true;
@@ -129,7 +110,7 @@ sign {
         PATH=%PATH%;%CD%\ext\tools
      
         REM sign files in release directory
-        simplesigner --nologo  --sign --strong-name ""${release_dir}\coapp.packaging.dll"" ""${release_dir}autopackage.exe"" ""${release_dir}debugwatch.exe"" ""${release_dir}Azure.exe"" ""${release_dir}RepositoryService.exe"" ""${release_dir}mkRepo.exe"" ""${release_dir}pTk.exe"" ""${release_dir}QuickTool.exe"" ""${release_dir}Scan.exe"" ""${release_dir}simplesigner.exe"" ""${release_dir}ToolScanner.exe"" ""${release_dir}CoApp.CCI.dll"" ""${release_dir}CoApp.Developer.Toolkit.dll""
+        simplesigner --nologo  --sign --strong-name ""${release_dir}\coapp.packaging.dll"" ""${release_dir}autopackage.exe"" ""${release_dir}debugwatch.exe"" ""${release_dir}pTk.exe"" ""${release_dir}QuickTool.exe"" ""${release_dir}Scan.exe"" ""${release_dir}simplesigner.exe"" ""${release_dir}ToolScanner.exe"" ""${release_dir}CoApp.CCI.dll"" ""${release_dir}CoApp.Developer.Toolkit.dll"" ""${release_dir}CoApp.Scripting.dll""
     ";
 }
 
@@ -147,9 +128,6 @@ export {
     build-command: @"
         REM copy tools into ..\tools folder (this should be the one that is committed back when exported)
         xcopy /Q /D /Y  ""${release_dir}autopackage.exe""  ""${tools_dir}"" || goto failed
-        xcopy /Q /D /Y  ""${release_dir}Azure.exe""  ""${tools_dir}"" || goto failed
-        REM xcopy /Q /D /Y  ""${release_dir}CoApp.RepositoryService.exe""  ""${tools_dir}"" || goto failed
-        REM xcopy /Q /D /Y  ""${release_dir}mkRepo.exe"" ""${tools_dir}"" || goto failed
         xcopy /Q /D /Y  ""${release_dir}pTk.exe"" ""${tools_dir}"" || goto failed
         xcopy /Q /D /Y  ""${release_dir}QuickTool.exe"" ""${tools_dir}"" || goto failed
         xcopy /Q /D /Y  ""${release_dir}Scan.exe"" ""${tools_dir}"" || goto failed
@@ -180,9 +158,6 @@ anycpu {
         // @"output\any\${cfg}\bin\native-bootstrap.exe",
         @"output\any\${cfg}\bin\autopackage.exe",
         @"output\any\${cfg}\bin\debugwatch.exe",
-        @"output\any\${cfg}\bin\Azure.exe",
-        @"output\any\${cfg}\bin\RepositoryService.exe",
-        @"output\any\${cfg}\bin\mkRepo.exe",
         @"output\any\${cfg}\bin\pTk.exe",
         @"output\any\${cfg}\bin\QuickTool.exe",
         @"output\any\${cfg}\bin\Scan.exe",

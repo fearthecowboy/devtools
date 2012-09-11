@@ -1,0 +1,78 @@
+﻿tool[reset] {
+}
+
+tool[reset-hard] {
+}
+
+tool[reset-really-hard] {
+}
+
+tool[sdk8] {
+}
+
+tool[sdk7.1] {
+
+} 
+
+tool[sdk7] {
+}
+
+tool[sdk6.1] {
+}
+
+tool[wdk7] {
+}
+
+tool[wdk8] {
+
+}
+
+tool[wix36] {
+
+}
+
+tool[vc11] {
+	detection : c# { 
+		using CoApp.Toolkit.Utility;
+
+		var files = FileFinder.ProgramFilesAndDotNetAndSdk.ScanForFile( "vcvarsall.bat");
+		var possibles = 
+			from file in files 
+			where file.folderNames.Contains("Microsoft Visual Studio 11.0")
+			select file;
+
+		if( !possibles.Any() )  {
+			throw new FileNotFoundException();
+		}
+		
+		if( possibles.Count() > 1 )  {
+			throw new MultipleMatchesException(possibles);
+		}
+
+		return possbiles.FirstOrDefault();
+	}
+
+	environment-command : captured-cmd {
+		call C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\vcvarsall.bat ${PLATFORM}
+		echo ==start-here==
+		set 
+	};
+};
+
+release { 
+	build : [
+		c# { 
+		},
+
+		jscript { 
+		},
+
+		powershell { 
+		},
+
+		cmd { 
+		},
+
+
+	];
+};

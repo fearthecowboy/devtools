@@ -1,0 +1,41 @@
+﻿
+script-handler[cmd] {
+	execute : c# { 
+
+	};
+};
+
+
+script-handler[captured-cmd] {
+	execute : c# { 
+
+	};
+};
+
+
+script-handler[jscript] {
+
+};
+
+script-handler[powershell] {
+
+}
+
+script-handler[latest-compatible-package] {
+	
+}
+
+script-handler[latest-package] {
+	
+}
+
+script-handler[exact-package] {
+	
+}
+
+test{
+	somethig : c# "return 5 * 10;";
+	else : jscript 100;
+	more : test  = "${aScript}";
+
+}

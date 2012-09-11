@@ -43,7 +43,6 @@ files[exes] {
     include: {
         "autopackage.exe",
         "debugwatch.exe",
-        "mkrepo.exe",
         "ptk.exe",
         "quicktool.exe",
         "scan.exe",
@@ -60,7 +59,8 @@ files[dlls] {
     include: {
         "coapp.developer.toolkit.dll",
         "coapp.cci.dll",
-        "coapp.packaging.dll"
+        "coapp.packaging.dll",
+        "CoApp.Scripting.dll"
     };
     
     trim-path: minimal;

@@ -10,7 +10,7 @@
 // </license>
 //-----------------------------------------------------------------------
 
-namespace CoApp.UniversalFileAccess.Utility {
+namespace CoApp.Provider.Utility {
     /// <summary>
     ///   The delegate for handling a ProgressStream Report event.
     /// </summary>

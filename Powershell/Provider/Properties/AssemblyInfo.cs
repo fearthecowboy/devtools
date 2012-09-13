@@ -18,14 +18,14 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("CoApp.UniversalFileAccess")]
-[assembly: AssemblyDescription("Universal File Access Library")]
+[assembly: AssemblyTitle("CoApp.Provider")]
+[assembly: AssemblyDescription("Powershell Universal File Access Library")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyProduct("CoApp Tools")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 [assembly: NeutralResourcesLanguage("en")]
-[assembly: AssemblyBugtracker("https://github.com/coapp/universalfileaccess/issues")]
+[assembly: AssemblyBugtracker("https://github.com/coapp/devtools/issues")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 
 // to COM components.  If you need to access a type in this assembly from 

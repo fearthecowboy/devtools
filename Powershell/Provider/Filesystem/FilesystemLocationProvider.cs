@@ -10,7 +10,7 @@
 // </license>
 //-----------------------------------------------------------------------
 
-namespace CoApp.UniversalFileAccess.Filesystem {
+namespace CoApp.Provider.Filesystem {
     using System;
     using System.Collections.Generic;
     using System.IO;

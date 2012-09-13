@@ -10,7 +10,7 @@
 // </license>
 //-----------------------------------------------------------------------
 
-namespace CoApp.UniversalFileAccess.Commands {
+namespace CoApp.Provider.Commands {
     using System;
     using System.Collections.Generic;
     using System.IO;

@@ -10,18 +10,18 @@
 // </license>
 //-----------------------------------------------------------------------
 
-namespace CoApp.UniversalFileAccess.Azure {
+namespace CoApp.Azure.Provider {
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Management.Automation.Provider;
-    using Base;
     using Microsoft.WindowsAzure.StorageClient;
-    using Toolkit.Exceptions;
-    using Toolkit.Extensions;
-    using Utility;
-    using Path = Utility.Path;
+    using CoApp.Provider.Base;
+    using CoApp.Provider.Utility;
+    using CoApp.Toolkit.Exceptions;
+    using CoApp.Toolkit.Extensions;
+    using Path = CoApp.Provider.Utility.Path;
 
     public class AzureLocation : Location {
         public static AzureLocation InvalidLocation = new AzureLocation(null, new Path(), null) {

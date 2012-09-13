@@ -10,7 +10,7 @@
 // </license>
 //-----------------------------------------------------------------------
 
-namespace CoApp.UniversalFileAccess.Base {
+namespace CoApp.Provider.Base {
     using System.Collections.Generic;
     using System.Linq;
     using System.Management.Automation;

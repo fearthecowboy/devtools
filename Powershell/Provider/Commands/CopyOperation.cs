@@ -10,7 +10,7 @@
 // </license>
 //-----------------------------------------------------------------------
 
-namespace CoApp.UniversalFileAccess.Commands {
+namespace CoApp.Provider.Commands {
     using Base;
 
     internal class CopyOperation {

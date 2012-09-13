@@ -10,30 +10,30 @@
 // </license>
 //-----------------------------------------------------------------------
 
-namespace CoApp.UniversalFileAccess.Base {
+namespace CoApp.Provider.Base {
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Management.Automation.Provider;
 
-    public interface ILocation  {
-        string Name { get; }
-        string AbsolutePath { get; }
-        string Url { get; }
-        string Type { get; }
-        
-        long Length { get; }
-        DateTime TimeStamp { get; }
-        
-        bool Exists { get; }
-        bool IsFile { get; }
-        bool IsFileContainer { get; }
-        bool IsItemContainer { get; }
+    public interface ILocation {
+        string Name {get;}
+        string AbsolutePath {get;}
+        string Url {get;}
+        string Type {get;}
+
+        long Length {get;}
+        DateTime TimeStamp {get;}
+
+        bool Exists {get;}
+        bool IsFile {get;}
+        bool IsFileContainer {get;}
+        bool IsItemContainer {get;}
 
         IEnumerable<ILocation> GetDirectories(bool recurse);
         IEnumerable<ILocation> GetFiles(bool recurse);
 
-         void Delete(bool recurse);
+        void Delete(bool recurse);
 
         Stream Open(FileMode mode);
 

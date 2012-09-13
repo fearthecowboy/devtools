@@ -11,8 +11,53 @@
 //-----------------------------------------------------------------------
 
 namespace CoApp.Scripting.Commands {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Management.Automation;
+    using Powershell;
+    using Service;
+    using ServiceStack.ServiceClient.Web;
+    using ServiceStack.ServiceHost;
+    using Toolkit.Extensions;
+    using ServiceStack.Text;
 
-    internal class RestableCmdlet : Cmdlet {
+    public class RestableCmdlet<T> : Cmdlet, IService<T> where T : RestableCmdlet<T> {
+        [Parameter(HelpMessage = "Remote Service URL")]
+        public string Remote { get; set;}
+
+        [Parameter(HelpMessage = "Credentials to conenct to service")]
+        public PSCredential Credential { get; set; }
+
+        static RestableCmdlet () {
+            JsConfig<T>.ExcludePropertyNames = new[] {
+                "CommandRuntime", "CurrentPSTransaction", "Stopping", "Remote", "Credential", "CommandOrigin"
+            };
+            
+        }
+
+        protected virtual void ProcessRecordViaRest() {
+            var client = new JsonServiceClient(Remote);
+            var response = client.Send<object[]>((this as T));
+            foreach(var ob in response) {
+                WriteObject(ob);
+            }
+        }
+
+        public virtual object Execute(T cmdlet) {
+            // get the name from the request's attribute?
+            var name = cmdlet.GetType().Name;
+            using(var dps = new DynamicPowershell(RestAppHost.Instances.Values.First().SharedRunspacePool)) {
+                // var result = dps.Invoke(name, new object[0], PropertiesAsDictionary(cmdlet)).ToArray();
+                var result = dps.Invoke(name, _persistableElements, (object)cmdlet).ToArray();
+                return result;
+            }
+        }
+       
+        private PersistablePropertyInformation[] _persistableElements = typeof(T).GetPersistableElements().Where(p => !JsConfig<T>.ExcludePropertyNames.Contains(p.Name)).ToArray();
+
+        private IEnumerable<KeyValuePair<string, object>> PropertiesAsDictionary(object obj) {
+            return _persistableElements.Select(p => new KeyValuePair<string, object>(p.Name, p.GetValue(obj, null)));
+        }
     }
 }

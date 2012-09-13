@@ -10,10 +10,10 @@
 // </license>
 //-----------------------------------------------------------------------
 
-namespace CoApp.UniversalFileAccess.Utility {
+namespace CoApp.Provider.Utility {
     using System;
     using System.Linq;
-    using Toolkit.Extensions;
+    using CoApp.Toolkit.Extensions;
 
     public static class PathExtensions {
         private static readonly char[] Slashes = new[] {

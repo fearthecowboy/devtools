@@ -10,7 +10,7 @@
 // </license>
 //-----------------------------------------------------------------------
 
-namespace CoApp.UniversalFileAccess.Base {
+namespace CoApp.Provider.Base {
     public interface ILocationResolver {
         ILocation GetLocation(string path);
     }

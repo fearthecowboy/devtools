@@ -10,16 +10,16 @@
 // </license>
 //-----------------------------------------------------------------------
 
-namespace CoApp.UniversalFileAccess.Azure {
+namespace CoApp.Azure.Provider {
     using System.Collections.Generic;
     using System.Linq;
     using System.Management.Automation;
+    using CoApp.Provider.Utility;
     using Developer.Toolkit.Scripting.Languages.PropertySheet;
     using Microsoft.WindowsAzure.StorageClient;
     using Toolkit.Collections;
     using Toolkit.Exceptions;
     using Toolkit.Extensions;
-    using Utility;
 
     public class AzureDriveInfo : PSDriveInfo {
         internal const string ProviderScheme = "azure";

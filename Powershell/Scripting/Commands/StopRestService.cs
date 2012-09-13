@@ -17,7 +17,47 @@ using System.Text;
 
 namespace CoApp.Scripting.Commands {
     using System.Management.Automation;
+    using Service;
+    using Toolkit.Exceptions;
+    using Toolkit.Extensions;
 
-    class StopRestService : Cmdlet {
+    [Cmdlet("Stop", "RestService")]
+    public class StopRestService : Cmdlet {
+        [Parameter()]
+        public SwitchParameter All { get; set; }
+
+        [Parameter()]
+        public SwitchParameter Delete { get; set; }
+
+        [Parameter()]
+        public string Name { get; set; }
+
+        protected override void ProcessRecord() {
+            var d = (bool)Delete;
+
+            if(All) {
+                foreach(var instance in RestAppHost.Instances.Keys.ToArray()) {
+                    RestAppHost.Instances[instance].Stop();
+                    if(d) {
+                        RestAppHost.Instances[instance].Dispose();
+                        RestAppHost.Instances.Remove(instance);
+                    }
+                    WriteObject("Stopping REST Service '{0}'".format(instance));
+                }
+            }
+            else {
+                var instance = RestAppHost.Instances[Name.ToLower()];
+                if(instance == null) {
+                    throw new CoAppException("No rest service by name of '{0}'".format(Name));
+                }
+                instance.Stop();
+                if(d) {
+                    instance.Dispose();
+                    RestAppHost.Instances.Remove(Name.ToLower());
+                }
+
+                WriteObject("Stopping REST Service '{0}'".format(Name));
+            }
+        }
     }
 }

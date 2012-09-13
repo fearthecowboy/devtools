@@ -10,13 +10,13 @@
 // </license>
 //-----------------------------------------------------------------------
 
-namespace CoApp.UniversalFileAccess.Base {
+namespace CoApp.Provider.Base {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
     using System.Collections;
+    using System.Collections.Generic;
     using System.IO;
     using System.Management.Automation.Provider;
+    using System.Text;
     using Utility;
 
     public class ContentReader : IContentReader {
@@ -25,10 +25,10 @@ namespace CoApp.UniversalFileAccess.Base {
         private List<string> _lineBuffer = new List<string>();
         private Decoder _decoder;
 
-        public ContentReader (Stream stream, long length, Encoding encoding  = null) {
+        public ContentReader(Stream stream, long length, Encoding encoding = null) {
             _stream = stream;
             _length = length;
-            if( encoding != null) {
+            if (encoding != null) {
                 _decoder = encoding.GetDecoder();
             }
         }
@@ -37,27 +37,26 @@ namespace CoApp.UniversalFileAccess.Base {
             Close();
         }
 
-        private long RemainingBytes { get {
-            return _length - _stream.Position;
-        }}
-
-        
+        private long RemainingBytes {
+            get {
+                return _length - _stream.Position;
+            }
+        }
 
         public IList Read(long linesToRead) {
-            if( linesToRead == 0 ) {
+            if (linesToRead == 0) {
                 LoadBuffer(RemainingBytes);
                 linesToRead = _lineBuffer.Count;
             }
 
-            while(_lineBuffer.Count < linesToRead && RemainingBytes > 0 ) {
+            while (_lineBuffer.Count < linesToRead && RemainingBytes > 0) {
                 LoadBuffer();
             }
 
-            
             linesToRead = Math.Min(linesToRead, _lineBuffer.Count);
 
-            if (linesToRead > 0 ) {
-                    lock (_lineBuffer) {
+            if (linesToRead > 0) {
+                lock (_lineBuffer) {
                     var result = _lineBuffer.GetRange(0, (int)linesToRead);
                     _lineBuffer.RemoveRange(0, (int)linesToRead);
                     return result;
@@ -67,19 +66,18 @@ namespace CoApp.UniversalFileAccess.Base {
             return new List<string>();
         }
 
-        private void LoadBuffer(long bytesToRead = (256 * 1024) ) {
+        private void LoadBuffer(long bytesToRead = (256*1024)) {
             bytesToRead = Math.Min(bytesToRead, RemainingBytes);
             var buffer = new byte[bytesToRead];
 
             var read = _stream.Read(buffer, 0, (int)bytesToRead);
             var chars = new char[read];
             read = GetDecoder(buffer).GetChars(buffer, 0, read, chars, 0);
-            lock( _lineBuffer ) {
+            lock (_lineBuffer) {
                 _lineBuffer.AddRange(new String(chars, 0, read).Replace("\r\n", "\r").Split('\r'));
             }
         }
 
-        
         private Decoder GetDecoder(byte[] buffer) {
             return _decoder ?? (_decoder = buffer.GetTextEncoding().GetDecoder());
         }

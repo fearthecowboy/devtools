@@ -230,6 +230,8 @@
     <Compile Include="Toolkit\Sgml\Ucs4DecoderBigEngian.cs" />
     <Compile Include="Toolkit\Sgml\Ucs4DecoderLittleEndian.cs" />
     <Compile Include="Toolkit\Tools\SDK.cs" />
+    <Compile Include="Toolkit\Utility\AccessPrivateWrapper.cs" />
+    <Compile Include="Toolkit\Utility\AsyncLazy.cs" />
     <Compile Include="Toolkit\Utility\DependencyInformation.cs" />
     <Compile Include="Toolkit\Utility\DirectedGraph.cs" />
     <Compile Include="Toolkit\Utility\ExecutableInfo.cs" />

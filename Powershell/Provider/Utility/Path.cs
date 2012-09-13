@@ -10,12 +10,12 @@
 // </license>
 //-----------------------------------------------------------------------
 
-namespace CoApp.UniversalFileAccess.Utility {
+namespace CoApp.Provider.Utility {
     using System;
     using System.Linq;
     using System.Text.RegularExpressions;
-    using Toolkit.Collections;
-    using Toolkit.Extensions;
+    using CoApp.Toolkit.Collections;
+    using CoApp.Toolkit.Extensions;
 
     public class Path {
         private static Regex UriRx = new Regex(@"^([a-zA-Z]+):([\\|/]*)(\w*.*)");

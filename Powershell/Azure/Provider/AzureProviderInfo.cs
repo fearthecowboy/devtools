@@ -10,11 +10,11 @@
 // </license>
 //-----------------------------------------------------------------------
 
-namespace CoApp.UniversalFileAccess.Azure {
+namespace CoApp.Azure.Provider {
     using System.Linq;
     using System.Management.Automation;
-    using Base;
-    using Path = Utility.Path;
+    using CoApp.Provider.Base;
+    using CoApp.Provider.Utility;
 
     /*
     public interface ILocationProvider {

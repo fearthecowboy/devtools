@@ -12,7 +12,25 @@
 
 namespace CoApp.Azure.Commands {
     using System.Management.Automation;
+    using Scripting.Commands;
+    using Toolkit.Extensions;
 
-    internal class GetUploadLocation : Cmdlet {
+    [Cmdlet(VerbsCommon.Get,"UploadLocation")]
+    public class GetUploadLocation : RestableCmdlet<GetUploadLocation> {
+
+        [Parameter()]
+        public string Name {get; set;}
+
+        protected override void ProcessRecord() {
+            // must use this to support processing record remotely.
+            if( !string.IsNullOrEmpty(Remote) ) {
+                ProcessRecordViaRest();
+                return;
+            }
+
+            // continue as normal.
+            WriteObject("Hello there {0}".format(Name));
+        }
+       
     }
 }

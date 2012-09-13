@@ -37,14 +37,14 @@
     <Reference Include="CoApp.Toolkit">
       <SpecificVersion>False</SpecificVersion>
     </Reference>
-    <Reference Include="Microsoft.PowerShell.Commands.Management, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+    <Reference Include="Microsoft.PowerShell.Commands.Management, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\WindowsPowerShell\v1.0\Microsoft.PowerShell.Commands.Management.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.WindowsAzure.StorageClient, Version=1.7.0.22, Culture=neutral, PublicKeyToken=1e373a58e25250cb, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Management.Automation, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+    <Reference Include="System.Management.Automation, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\Program Files (x86)\Reference Assemblies\Microsoft\WindowsPowerShell\v1.0\System.Management.Automation.dll</HintPath>
     </Reference>
@@ -58,12 +58,10 @@
     <Compile Include="Provider\Commands\SourceSet.cs" />
     <Compile Include="Provider\Filesystem\FilesystemLocationProvider.cs" />
     <Compile Include="Provider\Base\ContentReader.cs" />
-    <Compile Include="Provider\Utility\AccessPrivateWrapper.cs" />
     <Compile Include="Provider\Base\UniversalProvider.cs" />
     <Compile Include="Provider\Base\Location.cs" />
     <Compile Include="Provider\Base\ILocation.cs" />
     <Compile Include="Provider\Commands\CopyItemExCmdlet.cs" />
-    <Compile Include="Provider\Utility\AsyncLazy.cs" />
     <Compile Include="Provider\Utility\MultibyteRank.cs" />
     <Compile Include="Provider\Utility\Path.cs" />
     <Compile Include="Provider\Utility\PathExtensions.cs" />

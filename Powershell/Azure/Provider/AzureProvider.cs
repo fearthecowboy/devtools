@@ -10,14 +10,21 @@
 // </license>
 //-----------------------------------------------------------------------
 
-namespace CoApp.UniversalFileAccess.Azure {
+namespace CoApp.Azure.Provider {
     using System.Collections.ObjectModel;
     using System.Management.Automation;
     using System.Management.Automation.Provider;
-    using Base;
+    using System.Reflection;
+    using CoApp.Provider.Base;
+    using Toolkit.Extensions;
 
     [CmdletProvider("Azure", ProviderCapabilities.Credentials | ProviderCapabilities.Filter)]
     public class AzureProvider : UniversalProvider<AzureProviderInfo> {
+        static AzureProvider() {
+            var file = Assembly.GetExecutingAssembly().ExtractFileResourceToTemp("Azure.format.ps1xml");
+            new SessionState().InvokeCommand.InvokeScript("Update-FormatData -PrependPath {0}".format(file));
+        }
+
         /// <summary>
         ///   Gives the provider the opportunity to initialize itself.
         /// </summary>

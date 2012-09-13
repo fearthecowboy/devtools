@@ -2,9 +2,9 @@
 <Configuration>
   <ViewDefinitions>
     <View>
-      <Name>CoApp.UniversalFileAccess.ILocation</Name>
+      <Name>CoApp.Azure.Provider.AzureLocation</Name>
       <ViewSelectedBy>
-        <TypeName>CoApp.UniversalFileAccess.Azure.AzureLocation</TypeName>
+        <TypeName>CoApp.Azure.Provider.AzureLocation</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <TableHeaders>
